@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { getGameState, testMove } from './services/api'
 import './App.css'
+import { resetBoard } from './services/api'
 
 import Board from './components/Board'
 import Piece from './components/Piece'
@@ -16,22 +17,115 @@ function App() {
 	const [pieces, setPieces] = useState([])
 	const [selectedPiece, setSelectedPiece] = useState(null)
 	const [rotation, setRotation] = useState(0)
+	const [hoverCells, setHoverCells] = useState([])
 
-	const handleTileClick = async (row, col) => {
-		console.log(`Clicked tile: ${row}, ${col}`)
 
-		await testMove(row, col)
-		const data = await getGameState()
-		setBoard(data.board)
+	const handleReset = async () => {
+
+		await resetBoard()
+
+		const boardData = await getGameState()
+
+		setBoard(boardData.board)
+
+		setPieces(prev =>
+			prev.map(piece => ({
+				...piece,
+				placed: false
+			}))
+		)
+
+		setSelectedPiece(null)
+		setHoverCells([])
 	}
+
+
+	const handleTileClick = async () => {
+
+		if (hoverCells.length === 0) return
+
+		await testMove(hoverCells)
+
+		const data = await getGameState()
+
+		setBoard(data.board)
+
+		setPieces(prev =>
+			prev.map(piece =>
+				piece.name === selectedPiece.name
+					? { ...piece, placed: true }
+					: piece
+			)
+		)
+
+		setSelectedPiece(null)
+		setHoverCells([])
+	}
+
+
+	const handleTileHover = (row, col) => {
+
+		console.log(rotation);
+
+		if (!selectedPiece) {
+			setHoverCells([])
+			return
+		}
+
+		const newHoverCells = []
+
+		for (const cell of selectedPiece.cells) {
+
+			const newRow = row + cell[0]
+			const newCol = col + cell[1]
+
+			// Out of bounds check
+			if (
+				newRow < 0 ||
+				newRow >= 20 ||
+				newCol < 0 ||
+				newCol >= 20
+			) {
+				setHoverCells([])
+				return
+			}
+
+			//already occupied check
+			if (board[newRow][newCol].occupied) {
+				setHoverCells([])
+				return
+			}
+
+			newHoverCells.push({
+				row: newRow,
+				col: newCol
+			})
+		}
+
+		setHoverCells(newHoverCells)
+	}
+
 
 	useEffect(() => {
 		async function loadPieces() {
 			const data = await getPieces()
-			setPieces(data.pieces)
+			setPieces(
+				data.pieces.map(piece => ({
+					...piece,
+					placed: false
+				}))
+			)
 		}
-
 		loadPieces()
+	}, [])
+
+
+	useEffect(() => {
+		async function loadBoard() {
+			const data = await getGameState()
+			setBoard(data.board)
+		}
+		loadBoard()
 	}, [])
 
 
@@ -55,6 +149,7 @@ function App() {
 
 	}, [selectedPiece])
 
+
 	return (
 		<div>
 			<h1>Blokus</h1>
@@ -70,6 +165,8 @@ function App() {
 				<Board
 					board={board}
 					onTileClick={handleTileClick}
+					onTileHover={handleTileHover}
+					hoverCells={hoverCells}
 				/>
 
 				<div
@@ -86,8 +183,13 @@ function App() {
 						<Piece
 							key={index}
 							piece={piece}
+							placed={piece.placed}
 							isSelected={selectedPiece?.name === piece.name}
-							onClick={() => setSelectedPiece(piece)}
+							onClick={() => {
+								if (!piece.placed) {
+									setSelectedPiece(piece)
+								}
+							}}
 							rotation={
 								selectedPiece?.name === piece.name
 									? rotation
@@ -97,7 +199,9 @@ function App() {
 					))}
 
 				</div>
-
+			</div>
+			<div>
+				<button onClick={handleReset}>Reset Board</button>
 			</div>
 		</div>
 	)

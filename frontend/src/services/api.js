@@ -7,7 +7,7 @@ export async function getGameState() {
   return await response.json()
 }
 
-export async function testMove(row, col) {
+export async function testMove(cells) {
 
   const response = await fetch(`${API_BASE}/game/test-move`, {
     method: 'POST',
@@ -15,8 +15,7 @@ export async function testMove(row, col) {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      row,
-      col
+      cells
     })
   })
 
@@ -28,4 +27,13 @@ export async function getPieces() {
   const response = await fetch(`${API_BASE}/game/pieces`)
 
   return await response.json()
+}
+
+export async function resetBoard() {
+
+	const response = await fetch(`${API_BASE}/game/reset`, {
+		method: 'POST'
+	})
+
+	return await response.json()
 }

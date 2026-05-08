@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from app.game.pieces import ALL_PIECES
+from app.game.board import Board
 
 app = FastAPI()
 
@@ -13,31 +14,30 @@ app.add_middleware(
 )
 
 # Simple in-memory board
-board = [[0 for _ in range(20)] for _ in range(20)]
+board = Board()
 
 
 class MoveRequest(BaseModel):
-    row: int
-    col: int
+    cells: list
 
 
 @app.get("/game/state")
 def get_game_state():
+
     return {
-        "board": board
+        "board": board.get_grid()
     }
 
 
 @app.post("/game/test-move")
 def test_move(move: MoveRequest):
 
-    print(f"Move received: {move.row}, {move.col}")
-
-    board[move.row][move.col] = 1
+    board.place_piece(move.cells)
 
     return {
         "success": True
     }
+
 
 @app.get("/game/pieces")
 def get_pieces():
@@ -50,4 +50,15 @@ def get_pieces():
             }
             for piece in ALL_PIECES
         ]
+    }
+
+@app.post("/game/reset")
+def reset_board():
+
+    global board
+
+    board = Board()
+
+    return {
+        "success": True
     }

@@ -1,4 +1,4 @@
-function Piece({ piece, isSelected, onClick, rotation }) {
+function Piece({ piece, placed, isSelected, onClick, rotation }) {
 
     const size = 15
 
@@ -31,10 +31,13 @@ function Piece({ piece, isSelected, onClick, rotation }) {
                         top: `${row * size}px`,
                         left: `${col * size}px`,
 
-                        backgroundColor: isSelected
-                            ? 'lightblue'
-                            : 'blue',
-
+                        backgroundColor: placed
+                            ? 'gray'
+                            : isSelected
+                                ? 'lightblue'
+                                : 'blue',
+                        opacity: placed ? 0.5 : 1,
+                        cursor: placed ? 'default' : 'pointer',
                         border: '1px solid black',
                     }}
                 />
