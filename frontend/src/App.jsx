@@ -9,11 +9,7 @@ import { getPieces } from './services/api'
 
 function App() {
 
-	const [board, setBoard] = useState(
-		Array(20).fill(null).map(() =>
-			Array(20).fill(0)
-		)
-	)
+	const [board, setBoard] = useState(Array(20).fill(null).map(() => Array(20).fill(0) ))
 	const [pieces, setPieces] = useState([])
 	const [selectedPiece, setSelectedPiece] = useState(null)
 	const [hoverCells, setHoverCells] = useState([])
@@ -27,10 +23,12 @@ function App() {
 
 		setBoard(boardData.board)
 
-		setPieces(prev =>
-			prev.map(piece => ({
+		const piecesData = await getPieces()
+		
+		setPieces(
+			piecesData.pieces.map(piece => ({
 				...piece,
-				placed: false
+				rotation: 0
 			}))
 		)
 
@@ -43,7 +41,7 @@ function App() {
 
 		if (hoverCells.length === 0) return
 
-		await testMove(hoverCells)
+		await testMove(hoverCells, selectedPiece.name)
 
 		const data = await getGameState()
 
@@ -123,7 +121,6 @@ function App() {
 			setPieces(
 				data.pieces.map(piece => ({
 					...piece,
-					placed: false,
 					rotation: 0
 				}))
 			)

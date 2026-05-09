@@ -10,7 +10,8 @@ ALL_PIECES = [
             (0, 2),
             (0, 3),
             (1, 3)
-        ]
+        ],
+        False
     ),
 
     Piece(
@@ -21,7 +22,8 @@ ALL_PIECES = [
             (1, 1),
             (0, 2),
             (0, 3)
-        ]
+        ],
+        False
     ),
 
     Piece(
@@ -32,7 +34,8 @@ ALL_PIECES = [
             (0, 2),
             (1, 2),
             (1, 3)
-        ]
+        ],
+        False
     ),
 
     Piece(
@@ -41,7 +44,8 @@ ALL_PIECES = [
             (0, 0),
             (1, 0),
             (1, 1)
-        ]
+        ],
+        False
     ),
     
     Piece(
@@ -52,7 +56,8 @@ ALL_PIECES = [
             (1, 0),
             (2, 0),
             (2, 1)
-        ]
+        ],
+        False
     ),
 
     Piece(
@@ -63,7 +68,8 @@ ALL_PIECES = [
             (2, 0),
             (2, 1),
             (2, 2)
-        ]
+        ],
+        False
     ),
 
     Piece(
@@ -74,7 +80,8 @@ ALL_PIECES = [
             (1, 1),
             (1, 2),
             (2, 2)
-        ]
+        ],
+        False
     ),
 
     Piece(
@@ -85,7 +92,8 @@ ALL_PIECES = [
             (1, 0),
             (2, 1),
             (1, 2)
-        ]
+        ],
+        False
     ),
 
     Piece(
@@ -96,7 +104,8 @@ ALL_PIECES = [
             (0, 2),
             (1, 1),
             (1, 2)
-        ]
+        ],
+        False
     ),
 
     Piece(
@@ -107,7 +116,8 @@ ALL_PIECES = [
             (1, 1),
             (2, 1),
             (2, 2)
-        ]
+        ],
+        False
     ),
 
     Piece(
@@ -118,7 +128,8 @@ ALL_PIECES = [
             (1, 0),
             (1, 1),
             (2, 0)
-        ]
+        ],
+        False
     ),
 
     Piece(
@@ -129,7 +140,8 @@ ALL_PIECES = [
             (1, 0),
             (1, 1),
             (2, 1)
-        ]
+        ],
+        False
     ),
 
     Piece(
@@ -139,7 +151,8 @@ ALL_PIECES = [
             (0, 1),
             (1, 0),
             (1, 1)
-        ]
+        ],
+        False
     ),
 
     Piece(
@@ -149,7 +162,8 @@ ALL_PIECES = [
             (0, 1),
             (0, 2),
             (1, 2)
-        ]
+        ],
+        False
     ),
 
     Piece(
@@ -159,7 +173,8 @@ ALL_PIECES = [
             (0, 1),
             (1, 1),
             (0, 2)
-        ]
+        ],
+        False
     ),
 
     Piece(
@@ -169,14 +184,16 @@ ALL_PIECES = [
             (0, 1),
             (1, 1),
             (1, 2)
-        ]
+        ],
+        False
     ),
 
     Piece(
         "I1",
         [
             (0, 0)
-        ]
+        ],
+        False
     ),
 
     Piece(
@@ -184,7 +201,8 @@ ALL_PIECES = [
         [
             (0, 0),
             (0, 1)
-        ]
+        ],
+        False
     ),
 
     Piece(
@@ -193,7 +211,8 @@ ALL_PIECES = [
             (0, 0),
             (0, 1),
             (0, 2)
-        ]
+        ],
+        False
     ),
 
     Piece(
@@ -203,7 +222,8 @@ ALL_PIECES = [
             (0, 1),
             (0, 2),
             (0, 3)
-        ]
+        ],
+        False
     ),
 
     Piece(
@@ -214,7 +234,8 @@ ALL_PIECES = [
             (0, 2),
             (0, 3),
             (0, 4)
-        ]
+        ],
+        False
     ),
 
 ]

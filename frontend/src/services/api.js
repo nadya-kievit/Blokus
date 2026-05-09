@@ -7,7 +7,7 @@ export async function getGameState() {
   return await response.json()
 }
 
-export async function testMove(cells) {
+export async function testMove(cells, pieceName) {
 
   const response = await fetch(`${API_BASE}/game/test-move`, {
     method: 'POST',
@@ -15,7 +15,8 @@ export async function testMove(cells) {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      cells
+      cells,
+      pieceName
     })
   })
 

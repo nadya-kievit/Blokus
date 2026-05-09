@@ -19,6 +19,7 @@ board = Board()
 
 class MoveRequest(BaseModel):
     cells: list
+    pieceName: str
 
 
 @app.get("/game/state")
@@ -33,6 +34,9 @@ def get_game_state():
 def test_move(move: MoveRequest):
 
     board.place_piece(move.cells)
+    for piece in ALL_PIECES:
+        if piece.name == move.pieceName:
+            piece.set_placed(True)
 
     return {
         "success": True
@@ -46,11 +50,13 @@ def get_pieces():
         "pieces": [
             {
                 "name": piece.name,
-                "cells": piece.cells
+                "cells": piece.cells,
+                "placed": piece.placed
             }
             for piece in ALL_PIECES
         ]
     }
+
 
 @app.post("/game/reset")
 def reset_board():
@@ -58,6 +64,9 @@ def reset_board():
     global board
 
     board = Board()
+
+    for piece in ALL_PIECES:
+        piece.set_placed(False)
 
     return {
         "success": True
