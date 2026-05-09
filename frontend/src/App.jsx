@@ -16,7 +16,6 @@ function App() {
 	)
 	const [pieces, setPieces] = useState([])
 	const [selectedPiece, setSelectedPiece] = useState(null)
-	const [rotation, setRotation] = useState(0)
 	const [hoverCells, setHoverCells] = useState([])
 
 
@@ -65,19 +64,31 @@ function App() {
 
 	const handleTileHover = (row, col) => {
 
-		console.log(rotation);
-
 		if (!selectedPiece) {
 			setHoverCells([])
 			return
 		}
 
+		const rotatedCells = selectedPiece.cells.map(([row, col]) => {
+			switch (selectedPiece.rotation) {
+				case 90:
+					return [-col, row]
+				case 180:
+					return [-row, -col]
+				case 270:
+					return [col, -row]
+				default:
+					return [row, col]
+			}
+		})
 		const newHoverCells = []
+		const minRow = Math.min(...rotatedCells.map(c => c[0]))
+		const minCol = Math.min(...rotatedCells.map(c => c[1]))
 
-		for (const cell of selectedPiece.cells) {
+		for (const cell of rotatedCells) {
 
-			const newRow = row + cell[0]
-			const newCol = col + cell[1]
+			const newRow = row + (cell[0] - minRow)
+			const newCol = col + (cell[1] - minCol)
 
 			// Out of bounds check
 			if (
@@ -112,7 +123,8 @@ function App() {
 			setPieces(
 				data.pieces.map(piece => ({
 					...piece,
-					placed: false
+					placed: false,
+					rotation: 0
 				}))
 			)
 		}
@@ -130,15 +142,44 @@ function App() {
 
 
 	useEffect(() => {
+
 		const handleKeyDown = (event) => {
 
 			if (!selectedPiece) return
-			if (event.key === 'ArrowRight') {
-				setRotation(prev => (prev + 90) % 360)
-			}
-			if (event.key === 'ArrowLeft') {
-				setRotation(prev => (prev - 90 + 360) % 360)
-			}
+
+			setPieces(prev => {
+
+				const updatedPieces = prev.map(piece => {
+
+					if (piece.name !== selectedPiece.name) {
+						return piece
+					}
+
+					let newRotation = piece.rotation
+
+					if (event.key === 'ArrowRight') {
+						newRotation = (piece.rotation + 90) % 360
+					}
+
+					if (event.key === 'ArrowLeft') {
+						newRotation = (piece.rotation - 90 + 360) % 360
+					}
+
+					return {
+						...piece,
+						rotation: newRotation
+					}
+				})
+
+				const updatedSelectedPiece =
+					updatedPieces.find(
+						p => p.name === selectedPiece.name
+					)
+
+				setSelectedPiece(updatedSelectedPiece)
+
+				return updatedPieces
+			})
 		}
 
 		window.addEventListener('keydown', handleKeyDown)
@@ -190,11 +231,7 @@ function App() {
 									setSelectedPiece(piece)
 								}
 							}}
-							rotation={
-								selectedPiece?.name === piece.name
-									? rotation
-									: 0
-							}
+							rotation={piece.rotation}
 						/>
 					))}
 
