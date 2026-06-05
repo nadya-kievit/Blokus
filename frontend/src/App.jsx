@@ -199,11 +199,10 @@ function App() {
 
 
 	return (
-		<div>
-			<h1>Blokus</h1>
+		<div className="game-page">
+			<h1 className="game-title">Blokus</h1>
 
-			<div style={{ display: 'flex', gap: '50px', alignItems: 'flex-start' }} >
-
+			<div className="board-center">
 				<Board
 					board={board}
 					onTileClick={handleTileClick}
@@ -211,27 +210,28 @@ function App() {
 					hoverCells={hoverCells}
 					isHoverValid={isHoverValid}
 				/>
-
-				<div style={{ width: '500px', display: 'flex', flexWrap: 'wrap', gap: '20px', alignContent: 'flex-start' }} >
-
-					{pieces.map((piece, index) => (
-						<Piece
-							key={index}
-							piece={piece}
-							placed={piece.placed}
-							isSelected={selectedPiece?.name === piece.name}
-							onClick={() => {
-								if (!piece.placed) {
-									setSelectedPiece(piece)
-								}
-							}}
-							rotation={piece.rotation}
-						/>
-					))}
-
-				</div>
 			</div>
-			<div>
+
+			<div className="pieces-bottom-right">
+				<div className="pieces-panel-title">Player Pieces</div>
+
+				{pieces.map((piece, index) => (
+					<Piece
+						key={index}
+						piece={piece}
+						placed={piece.placed}
+						isSelected={selectedPiece?.name === piece.name}
+						onClick={() => {
+							if (!piece.placed) {
+								setSelectedPiece(piece)
+							}
+						}}
+						rotation={piece.rotation}
+					/>
+				))}
+			</div>
+
+			<div className="reset-button-container">
 				<button onClick={handleReset}>Reset Board</button>
 			</div>
 		</div>

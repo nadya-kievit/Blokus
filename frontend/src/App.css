@@ -1,19 +1,228 @@
+html,
+body,
+#root {
+	margin: 0;
+	min-height: 100%;
+	width: 100%;
+	overflow-x: hidden;
+}
+
+body {
+	margin: 0;
+	min-height: 100vh;
+	width: 100%;
+	background:
+		radial-gradient(circle at top left, rgba(255, 255, 255, 0.35), transparent 35%),
+		linear-gradient(135deg, #d7eef7 0%, #b6d8ec 45%, #8fb7d8 100%);
+	font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.game-page {
+	min-height: 100vh;
+	width: 100%;
+	position: relative;
+	overflow: hidden;
+}
+
+.game-title {
+	text-align: center;
+	margin: 16px 0 0 0;
+	color: #17496b;
+	font-size: 42px;
+	letter-spacing: 1px;
+	text-shadow: 0 2px 4px rgba(255, 255, 255, 0.7);
+}
+
+.board-center {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+}
+
+.pieces-bottom-right {
+	position: absolute;
+	right: 30px;
+	bottom: 30px;
+
+	box-sizing: border-box;
+
+	width: clamp(260px, calc((100vw - 660px) / 2 - 50px), 500px);
+	max-height: 280px;
+
+	display: flex;
+	flex-wrap: wrap;
+	gap: 20px;
+	align-content: flex-start;
+	justify-content: flex-end;
+
+	overflow-y: auto;
+
+	padding: 18px;
+	border-radius: 12px;
+
+	background:
+		linear-gradient(145deg, rgba(255, 255, 255, 0.55), rgba(205, 235, 250, 0.35));
+
+	border: 2px solid rgba(255, 255, 255, 0.75);
+
+	box-shadow:
+		0 12px 28px rgba(35, 72, 100, 0.25),
+		inset 0 2px 6px rgba(255, 255, 255, 0.75),
+		inset 0 -3px 8px rgba(90, 130, 160, 0.16);
+
+	backdrop-filter: blur(8px);
+}
+
+.pieces-bottom-right::-webkit-scrollbar {
+	width: 10px;
+}
+
+.pieces-bottom-right::-webkit-scrollbar-track {
+	background: rgba(255, 255, 255, 0.35);
+	border-radius: 999px;
+}
+
+.pieces-bottom-right::-webkit-scrollbar-thumb {
+	background: rgba(40, 120, 180, 0.45);
+	border-radius: 999px;
+	border: 2px solid rgba(255, 255, 255, 0.45);
+}
+
+.pieces-bottom-right::-webkit-scrollbar-thumb:hover {
+	background: rgba(40, 120, 180, 0.65);
+}
+
+.pieces-panel-title {
+	width: 100%;
+	text-align: center;
+	font-weight: 700;
+	font-size: 15px;
+	color: #17496b;
+	letter-spacing: 0.5px;
+	margin-bottom: -4px;
+	text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+.glass-piece-tile {
+	box-shadow:
+		inset 1px 1px 3px rgba(255, 255, 255, 0.45),
+		inset -1px -1px 3px rgba(0, 45, 120, 0.35),
+		0 1px 3px rgba(0, 0, 0, 0.18);
+}
+
+.glass-piece-tile::after {
+	content: "";
+	position: absolute;
+
+	width: 48%;
+	height: 48%;
+
+	top: 50%;
+	left: 50%;
+
+	transform: translate(-50%, -50%) rotate(45deg);
+
+	border-radius: 3px;
+
+	background:
+		linear-gradient(
+			135deg,
+			rgba(0, 35, 120, 0.32) 0%,
+			rgba(255, 255, 255, 0.16) 42%,
+			rgba(255, 255, 255, 0.28) 50%,
+			rgba(0, 35, 120, 0.38) 100%
+		);
+
+	box-shadow:
+		inset 2px 2px 3px rgba(0, 35, 120, 0.45),
+		inset -2px -2px 3px rgba(255, 255, 255, 0.22);
+
+	pointer-events: none;
+}
+
+.piece-tile {
+	position: absolute;
+	box-sizing: border-box;
+	overflow: hidden;
+}
+
+.piece-tile::after {
+	content: "";
+	position: absolute;
+
+	width: 48%;
+	height: 48%;
+
+	top: 50%;
+	left: 50%;
+
+	transform: translate(-50%, -50%) rotate(45deg);
+
+	border-radius: 2px;
+
+	background:
+		linear-gradient(
+			135deg,
+			rgba(0, 35, 120, 0.32) 0%,
+			rgba(255, 255, 255, 0.16) 42%,
+			rgba(255, 255, 255, 0.28) 50%,
+			rgba(0, 35, 120, 0.38) 100%
+		);
+
+	box-shadow:
+		inset 1px 1px 2px rgba(0, 35, 120, 0.45),
+		inset -1px -1px 2px rgba(255, 255, 255, 0.22);
+
+	pointer-events: none;
+}
+
+.reset-button-container {
+	position: absolute;
+	top: 30px;
+	right: 30px;
+}
+
 .board {
-  display: grid;
-  grid-template-columns: repeat(20, 30px);
-  gap: 1px;
-  width: fit-content;
+	display: grid;
+	grid-template-columns: repeat(20, 30px);
+	grid-template-rows: repeat(20, 30px);
+
+	width: fit-content;
+	height: fit-content;
+
+	padding: 10px;
+	border-radius: 18px;
+
+	background: linear-gradient(145deg, #f8fcff, #dcecf5);
+
+	border: 4px solid rgba(255, 255, 255, 0.8);
+
+	box-shadow:
+		0 18px 35px rgba(35, 72, 100, 0.35),
+		inset 0 2px 8px rgba(255, 255, 255, 0.9),
+		inset 0 -4px 10px rgba(90, 130, 160, 0.18);
 }
 
 .tile {
-  width: 30px;
-  height: 30px;
-  border: 1px solid black;
+	width: 30px;
+	height: 30px;
+	box-sizing: border-box;
 
-  display: flex;
-  align-items: center;
-  justify-content: center;
+	position: relative;
+	overflow: hidden;
 
-  cursor: pointer;
-  user-select: none;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+
+	cursor: pointer;
+	user-select: none;
+
+	border-radius: 5px;
+
+	transition:
+		background-color 0.12s ease,
+		box-shadow 0.12s ease,
+		transform 0.08s ease;
 }
