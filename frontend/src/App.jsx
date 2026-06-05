@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getGameState, testMove } from './services/api'
+import { getGameState, testMove, validateMove } from './services/api'
 import './App.css'
 import { resetBoard } from './services/api'
 
@@ -40,8 +40,14 @@ function App() {
 	const handleTileClick = async () => {
 
 		if (hoverCells.length === 0) return
+		if (!selectedPiece) return
 
-		await testMove(hoverCells, selectedPiece.name)
+		const result = await testMove(hoverCells, selectedPiece.name)
+
+		if (!result.success) {
+			console.log(result.reason)
+			return
+		}
 
 		const data = await getGameState()
 
@@ -60,7 +66,7 @@ function App() {
 	}
 
 
-	const handleTileHover = (row, col) => {
+	const handleTileHover = async (row, col) => {
 
 		if (!selectedPiece) {
 			setHoverCells([])
@@ -109,6 +115,13 @@ function App() {
 				row: newRow,
 				col: newCol
 			})
+		}
+
+		const result = await validateMove(newHoverCells, selectedPiece.name)
+
+		if (!result.valid) {
+			setHoverCells([])
+			return
 		}
 
 		setHoverCells(newHoverCells)
@@ -192,13 +205,7 @@ function App() {
 		<div>
 			<h1>Blokus</h1>
 
-			<div
-				style={{
-					display: 'flex',
-					gap: '50px',
-					alignItems: 'flex-start'
-				}}
-			>
+			<div style={{ display: 'flex', gap: '50px', alignItems: 'flex-start' }} >
 
 				<Board
 					board={board}
@@ -207,15 +214,7 @@ function App() {
 					hoverCells={hoverCells}
 				/>
 
-				<div
-					style={{
-						width: '500px',
-						display: 'flex',
-						flexWrap: 'wrap',
-						gap: '20px',
-						alignContent: 'flex-start'
-					}}
-				>
+				<div style={{ width: '500px', display: 'flex', flexWrap: 'wrap', gap: '20px', alignContent: 'flex-start' }} >
 
 					{pieces.map((piece, index) => (
 						<Piece

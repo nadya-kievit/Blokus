@@ -38,3 +38,19 @@ export async function resetBoard() {
 
 	return await response.json()
 }
+
+export async function validateMove(cells, pieceName) {
+
+  const response = await fetch(`${API_BASE}/game/validate-move`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      cells,
+      pieceName
+    })
+  })
+
+  return await response.json()
+}
