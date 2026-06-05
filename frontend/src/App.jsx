@@ -13,6 +13,7 @@ function App() {
 	const [pieces, setPieces] = useState([])
 	const [selectedPiece, setSelectedPiece] = useState(null)
 	const [hoverCells, setHoverCells] = useState([])
+	const [isHoverValid, setIsHoverValid] = useState(false)
 
 
 	const handleReset = async () => {
@@ -118,11 +119,7 @@ function App() {
 		}
 
 		const result = await validateMove(newHoverCells, selectedPiece.name)
-
-		if (!result.valid) {
-			setHoverCells([])
-			return
-		}
+		setIsHoverValid(result.valid);
 
 		setHoverCells(newHoverCells)
 	}
@@ -212,6 +209,7 @@ function App() {
 					onTileClick={handleTileClick}
 					onTileHover={handleTileHover}
 					hoverCells={hoverCells}
+					isHoverValid={isHoverValid}
 				/>
 
 				<div style={{ width: '500px', display: 'flex', flexWrap: 'wrap', gap: '20px', alignContent: 'flex-start' }} >

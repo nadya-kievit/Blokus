@@ -1,6 +1,6 @@
 import Tile from './Tile'
 
-function Board({ board, onTileClick, onTileHover, hoverCells }) {
+function Board({ board, onTileClick, onTileHover, hoverCells, isHoverValid }) {
 
     return (
         <div className="board">
@@ -14,6 +14,7 @@ function Board({ board, onTileClick, onTileHover, hoverCells }) {
                         col={colIndex}
                         onClick={onTileClick}
                         isHovered={ hoverCells.some( cell => cell.row === rowIndex && cell.col === colIndex )}
+                        isHoverValid={isHoverValid}
                         onHover={onTileHover}
                     />
                 ))
