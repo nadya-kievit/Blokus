@@ -1,13 +1,14 @@
 import Tile from './Tile'
 
-function Board({ board, onTileClick, onTileHover, hoverCells, isHoverValid }) {
+function Board({ board, onTileClick, onTileHover, hoverCells, isHoverValid, classes }) {
 
 	return (
-		<div className="board">
+		<div className={classes.board}>
 
 			{board.map((row, rowIndex) =>
 				row.map((cell, colIndex) => (
 					<Tile
+						classes={classes}
 						key={`${rowIndex}-${colIndex}`}
 						value={cell}
 						row={rowIndex}

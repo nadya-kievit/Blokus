@@ -1,56 +1,72 @@
-const API_BASE = 'http://127.0.0.1:8000'
+export const API_BASE = 'http://127.0.0.1:8000'
+export const WS_BASE = 'ws://127.0.0.1:8000'
 
-export async function getGameState() {
+async function parseResponse(response) {
+  const data = await response.json()
 
-  const response = await fetch(`${API_BASE}/game/state`)
+  if (!response.ok) {
+    throw new Error(data.detail || 'Request failed.')
+  }
 
-  return await response.json()
+  return data
 }
 
-export async function testMove(cells, pieceName) {
+export async function createGame() {
+  const response = await fetch(`${API_BASE}/games`, {
+    method: 'POST'
+  })
 
-  const response = await fetch(`${API_BASE}/game/test-move`, {
+  return parseResponse(response)
+}
+
+export async function getGame(gameId) {
+  const response = await fetch(`${API_BASE}/games/${gameId}`)
+
+  return parseResponse(response)
+}
+
+export async function joinGame(gameId, color) {
+  const response = await fetch(`${API_BASE}/games/${gameId}/join`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ color })
+  })
+
+  return parseResponse(response)
+}
+
+export async function quitGame(gameId, credentials) {
+  const response = await fetch(`${API_BASE}/games/${gameId}/quit`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(credentials)
+  })
+
+  return parseResponse(response)
+}
+
+export async function validateMove(gameId, credentials, cells, pieceName) {
+  const response = await fetch(`${API_BASE}/games/${gameId}/validate-move`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
       cells,
-      pieceName
+      pieceName,
+      playerId: credentials.playerId,
+      playerToken: credentials.playerToken
     })
   })
 
-  return await response.json()
+  return parseResponse(response)
 }
 
-export async function getPieces() {
-
-  const response = await fetch(`${API_BASE}/game/pieces`)
-
-  return await response.json()
-}
-
-export async function resetBoard() {
-
-	const response = await fetch(`${API_BASE}/game/reset`, {
-		method: 'POST'
-	})
-
-	return await response.json()
-}
-
-export async function validateMove(cells, pieceName) {
-
-  const response = await fetch(`${API_BASE}/game/validate-move`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      cells,
-      pieceName
-    })
+export function gameSocketUrl(gameId, credentials) {
+  const params = new URLSearchParams({
+    playerId: credentials.playerId,
+    token: credentials.playerToken
   })
 
-  return await response.json()
+  return `${WS_BASE}/games/${gameId}/ws?${params.toString()}`
 }

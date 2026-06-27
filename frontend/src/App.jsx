@@ -1,240 +1,109 @@
-import { useState, useEffect } from 'react'
-import { getGameState, testMove, validateMove } from './services/api'
-import './App.css'
-import { resetBoard } from './services/api'
+import { useEffect, useState } from 'react'
+import { GlobalStyles } from '@mui/material'
+import { globalGameStyles } from './gameStyles'
+import CreateGameScreen from './screens/CreateGameScreen'
+import ChooseColorScreen from './screens/ChooseColorScreen'
+import GameScreen from './screens/GameScreen'
 
-import Board from './components/Board'
-import Piece from './components/Piece'
-import { getPieces } from './services/api'
+function getRouteFromPath(pathname) {
+	const gameMatch = pathname.match(/^\/game\/([^/]+)$/)
+
+	if (gameMatch) {
+		return {
+			screen: 'game',
+			gameId: gameMatch[1],
+		}
+	}
+
+	return {
+		screen: 'createGame',
+		gameId: null,
+	}
+}
+
+function getStoredPlayer(gameId) {
+	const stored = localStorage.getItem(`blokus-player-${gameId}`)
+	return stored ? JSON.parse(stored) : null
+}
 
 function App() {
-
-	const [board, setBoard] = useState(Array(20).fill(null).map(() => Array(20).fill(0) ))
-	const [pieces, setPieces] = useState([])
-	const [selectedPiece, setSelectedPiece] = useState(null)
-	const [hoverCells, setHoverCells] = useState([])
-	const [isHoverValid, setIsHoverValid] = useState(false)
-
-
-	const handleReset = async () => {
-
-		await resetBoard()
-
-		const boardData = await getGameState()
-
-		setBoard(boardData.board)
-
-		const piecesData = await getPieces()
-		
-		setPieces(
-			piecesData.pieces.map(piece => ({
-				...piece,
-				rotation: 0
-			}))
-		)
-
-		setSelectedPiece(null)
-		setHoverCells([])
-	}
-
-
-	const handleTileClick = async () => {
-
-		if (hoverCells.length === 0) return
-		if (!selectedPiece) return
-
-		const result = await testMove(hoverCells, selectedPiece.name)
-
-		if (!result.success) {
-			console.log(result.reason)
-			return
-		}
-
-		const data = await getGameState()
-
-		setBoard(data.board)
-
-		setPieces(prev =>
-			prev.map(piece =>
-				piece.name === selectedPiece.name
-					? { ...piece, placed: true }
-					: piece
-			)
-		)
-
-		setSelectedPiece(null)
-		setHoverCells([])
-	}
-
-
-	const handleTileHover = async (row, col) => {
-
-		if (!selectedPiece) {
-			setHoverCells([])
-			return
-		}
-
-		const rotatedCells = selectedPiece.cells.map(([row, col]) => {
-			switch (selectedPiece.rotation) {
-				case 90:
-					return [-col, row]
-				case 180:
-					return [-row, -col]
-				case 270:
-					return [col, -row]
-				default:
-					return [row, col]
-			}
-		})
-		const newHoverCells = []
-		const minRow = Math.min(...rotatedCells.map(c => c[0]))
-		const minCol = Math.min(...rotatedCells.map(c => c[1]))
-
-		for (const cell of rotatedCells) {
-
-			const newRow = row + (cell[0] - minRow)
-			const newCol = col + (cell[1] - minCol)
-
-			// Out of bounds check
-			if (
-				newRow < 0 ||
-				newRow >= 20 ||
-				newCol < 0 ||
-				newCol >= 20
-			) {
-				setHoverCells([])
-				return
-			}
-
-			//already occupied check
-			if (board[newRow][newCol].occupied) {
-				setHoverCells([])
-				return
-			}
-
-			newHoverCells.push({
-				row: newRow,
-				col: newCol
-			})
-		}
-
-		const result = await validateMove(newHoverCells, selectedPiece.name)
-		setIsHoverValid(result.valid);
-
-		setHoverCells(newHoverCells)
-	}
-
+	const globalStyles = <GlobalStyles styles={globalGameStyles} />
+	const [path, setPath] = useState(window.location.pathname)
+	const [prefetchedGame, setPrefetchedGame] = useState(null)
+	const [playerSessionVersion, setPlayerSessionVersion] = useState(0)
+	const route = getRouteFromPath(path)
+	const hasPlayerCredentials =
+		route.gameId && Boolean(getStoredPlayer(route.gameId))
 
 	useEffect(() => {
-		async function loadPieces() {
-			const data = await getPieces()
-			setPieces(
-				data.pieces.map(piece => ({
-					...piece,
-					rotation: 0
-				}))
-			)
-		}
-		loadPieces()
-	}, [])
-
-
-	useEffect(() => {
-		async function loadBoard() {
-			const data = await getGameState()
-			setBoard(data.board)
-		}
-		loadBoard()
-	}, [])
-
-
-	useEffect(() => {
-
-		const handleKeyDown = (event) => {
-
-			if (!selectedPiece) return
-
-			setPieces(prev => {
-
-				const updatedPieces = prev.map(piece => {
-
-					if (piece.name !== selectedPiece.name) {
-						return piece
-					}
-
-					let newRotation = piece.rotation
-
-					if (event.key === 'ArrowRight') {
-						newRotation = (piece.rotation + 90) % 360
-					}
-
-					if (event.key === 'ArrowLeft') {
-						newRotation = (piece.rotation - 90 + 360) % 360
-					}
-
-					return {
-						...piece,
-						rotation: newRotation
-					}
-				})
-
-				const updatedSelectedPiece =
-					updatedPieces.find(
-						p => p.name === selectedPiece.name
-					)
-
-				setSelectedPiece(updatedSelectedPiece)
-
-				return updatedPieces
-			})
+		const handlePopState = () => {
+			setPath(window.location.pathname)
 		}
 
-		window.addEventListener('keydown', handleKeyDown)
+		window.addEventListener('popstate', handlePopState)
 
 		return () => {
-			window.removeEventListener('keydown', handleKeyDown)
+			window.removeEventListener('popstate', handlePopState)
+		}
+	}, [])
+
+	const navigateTo = nextPath => {
+		window.history.pushState({}, '', nextPath)
+		setPath(nextPath)
+	}
+
+	const handleEnterGame = gameOrGameId => {
+		if (typeof gameOrGameId === 'string') {
+			setPrefetchedGame(null)
+			navigateTo(`/game/${gameOrGameId}`)
+			return
 		}
 
-	}, [selectedPiece])
+		setPrefetchedGame(gameOrGameId)
+		navigateTo(`/game/${gameOrGameId.gameId}`)
+	}
 
+	const handleStartPlaying = () => {
+		setPlayerSessionVersion(version => version + 1)
+	}
+
+	const handleLeaveGame = () => {
+		navigateTo('/')
+	}
+
+	if (route.screen === 'createGame') {
+		return (
+			<>
+				{globalStyles}
+				<CreateGameScreen onEnterGame={handleEnterGame} />
+			</>
+		)
+	}
+
+	if (!hasPlayerCredentials) {
+		return (
+			<>
+				{globalStyles}
+				<ChooseColorScreen
+					gameId={route.gameId}
+					initialGame={prefetchedGame?.gameId === route.gameId ? prefetchedGame : null}
+					onJoined={handleStartPlaying}
+					onBack={handleLeaveGame}
+				/>
+			</>
+		)
+	}
 
 	return (
-		<div className="game-page">
-			<h1 className="game-title">Blokus</h1>
-
-			<div className="board-center">
-				<Board
-					board={board}
-					onTileClick={handleTileClick}
-					onTileHover={handleTileHover}
-					hoverCells={hoverCells}
-					isHoverValid={isHoverValid}
-				/>
-			</div>
-
-			<div className="pieces-bottom-right">
-				<div className="pieces-panel-title">Player Pieces</div>
-
-				{pieces.map((piece, index) => (
-					<Piece
-						key={index}
-						piece={piece}
-						placed={piece.placed}
-						isSelected={selectedPiece?.name === piece.name}
-						onClick={() => {
-							if (!piece.placed) {
-								setSelectedPiece(piece)
-							}
-						}}
-						rotation={piece.rotation}
-					/>
-				))}
-			</div>
-
-			<div className="reset-button-container">
-				<button onClick={handleReset}>Reset Board</button>
-			</div>
-		</div>
+		<>
+			{globalStyles}
+			<GameScreen
+				key={`${route.gameId}-${playerSessionVersion}`}
+				gameId={route.gameId}
+				onLeaveGame={handleLeaveGame}
+				onNeedsColor={() => setPlayerSessionVersion(version => version + 1)}
+			/>
+		</>
 	)
 }
 

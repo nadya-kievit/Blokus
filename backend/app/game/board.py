@@ -15,7 +15,7 @@ class Board:
             for _ in range(size)
         ]
 
-    def place_piece(self, cells, player=1):
+    def place_piece(self, cells, player=1, color=None):
 
         for cell in cells:
 
@@ -24,6 +24,7 @@ class Board:
 
             self.grid[row][col]["occupied"] = True
             self.grid[row][col]["player"] = player
+            self.grid[row][col]["color"] = color
 
     def get_grid(self):
         return self.grid

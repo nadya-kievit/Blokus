@@ -17,7 +17,15 @@ def is_cell_occupied(board_cell):
     return board_cell != 0
 
 
-def validate_move(board_grid, cells, is_first_move):
+def cell_belongs_to_player(board_cell, player_id):
+
+    if isinstance(board_cell, dict):
+        return board_cell.get("player") == player_id
+
+    return False
+
+
+def validate_move(board_grid, cells, is_first_move, player_id=1, first_corner=None):
 
     if not cells:
         return {
@@ -46,12 +54,14 @@ def validate_move(board_grid, cells, is_first_move):
 
         move_positions.add((row, col))
 
-    # Rule 3: first move must touch bottom-right corner
+    # Rule 3: first move must touch the player's assigned corner
     if is_first_move:
-        if (BOARD_SIZE - 1, BOARD_SIZE - 1) not in move_positions:
+        required_corner = first_corner or (BOARD_SIZE - 1, BOARD_SIZE - 1)
+
+        if tuple(required_corner) not in move_positions:
             return {
                 "valid": False,
-                "reason": "First piece must cover the bottom-right corner."
+                "reason": "First piece must cover your starting corner."
             }
 
         return {
@@ -75,11 +85,11 @@ def validate_move(board_grid, cells, is_first_move):
             if (
                 0 <= neighbor_row < BOARD_SIZE and
                 0 <= neighbor_col < BOARD_SIZE and
-                is_cell_occupied(board_grid[neighbor_row][neighbor_col])
+                cell_belongs_to_player(board_grid[neighbor_row][neighbor_col], player_id)
             ):
                 return {
                     "valid": False,
-                    "reason": "Piece cannot touch another piece horizontally or vertically."
+                    "reason": "Piece cannot touch your own pieces horizontally or vertically."
                 }
 
         # Rule 5: must touch another placed tile diagonally
@@ -94,14 +104,14 @@ def validate_move(board_grid, cells, is_first_move):
             if (
                 0 <= neighbor_row < BOARD_SIZE and
                 0 <= neighbor_col < BOARD_SIZE and
-                is_cell_occupied(board_grid[neighbor_row][neighbor_col])
+                cell_belongs_to_player(board_grid[neighbor_row][neighbor_col], player_id)
             ):
                 touches_diagonal = True
 
     if not touches_diagonal:
         return {
             "valid": False,
-            "reason": "Piece must touch another piece diagonally."
+            "reason": "Piece must touch one of your pieces diagonally."
         }
 
     return {
