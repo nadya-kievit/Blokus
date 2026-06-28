@@ -3,6 +3,7 @@ import { makeStyles } from 'tss-react/mui'
 import clsx from 'clsx'
 import { getGame, joinGame } from '../services/api'
 import gameStyles from '../gameStyles'
+import PieceBagButton from '../components/PieceBagButton'
 
 const useStyles = makeStyles()(gameStyles)
 
@@ -77,18 +78,14 @@ function ChooseColorScreen({ gameId, initialGame, onJoined, onBack }) {
 				{game && (
 					<div className={classes.colorOptions}>
 						{game.availableColors.map(option => (
-							<button
+							<PieceBagButton
 								key={option.name}
+								name={option.name}
+								color={option.color}
+								size={150}
 								disabled={isJoining}
 								onClick={() => handleChooseColor(option.name)}
-							>
-								<span
-									className={classes.playerColor}
-									style={{ background: option.color }}
-								/>
-
-								{option.name}
-							</button>
+							/>
 						))}
 					</div>
 				)}

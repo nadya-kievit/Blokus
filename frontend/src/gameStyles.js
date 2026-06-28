@@ -113,7 +113,7 @@ const gameStyles = () => ({
 	},
 
 	startPanel: {
-		width: 'min(460px, calc(100vw - 40px))',
+		width: '750px',
 		padding: 28,
 		boxSizing: 'border-box',
 		borderRadius: 10,
@@ -190,17 +190,13 @@ const gameStyles = () => ({
 	},
 
 	colorOptions: {
-		display: 'grid',
-		gridTemplateColumns: 'repeat(2, 1fr)',
-		gap: 10,
+		display: 'flex',
+		flexDirection: 'row',
+		gap: 16,
 		marginBottom: 18,
-
-		'& button': {
-			display: 'flex',
-			alignItems: 'center',
-			justifyContent: 'center',
-			gap: 8,
-		},
+		justifyContent: 'center',
+		alignItems: 'center',
+		flexWrap: 'nowrap',
 	},
 
 	textButton: {
