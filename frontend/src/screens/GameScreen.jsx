@@ -38,13 +38,36 @@ function rotationForCells(cells, rotation) {
 	})
 }
 
+function viewToBoard(row, col, rotation, size) {
+	switch (rotation) {
+		case 90:
+			return { row: size - 1 - col, col: row }
+		case 180:
+			return { row: size - 1 - row, col: size - 1 - col }
+		case 270:
+			return { row: col, col: size - 1 - row }
+		default:
+			return { row, col }
+	}
+}
+
+function rotationForCorner(corner) {
+	if (!corner) return 0
+
+	if (corner.row === 0 && corner.col === 0) return 180
+	if (corner.row === 0 && corner.col === BOARD_SIZE - 1) return 90
+	if (corner.row === BOARD_SIZE - 1 && corner.col === 0) return 270
+
+	return 0
+}
+
 function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 	const { classes } = useStyles()
 
 	const storageKey = `blokus-player-${gameId}`
 	const socketRef = useRef(null)
 
-	const [credentials, setCredentials] = useState(() => {
+	const [credentials] = useState(() => {
 		const stored = localStorage.getItem(storageKey)
 		return stored ? JSON.parse(stored) : null
 	})
@@ -86,6 +109,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 		game.currentPlayerId === credentials?.playerId
 
 	const board = game?.board || EMPTY_BOARD
+	const boardRotation = rotationForCorner(me?.corner)
 
 	useEffect(() => {
 		if (game && !credentials) {
@@ -224,7 +248,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 		setHoverCells([])
 	}
 
-	const handleTileHover = async (row, col) => {
+	const handleTileHover = async (row, col, viewRow, viewCol) => {
 		if (!canMove || !selectedPiece || !credentials) {
 			setHoverCells([])
 			return
@@ -236,18 +260,25 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 		const newHoverCells = []
 
 		for (const cell of rotatedCells) {
-			const newRow = row + (cell[0] - minRow)
-			const newCol = col + (cell[1] - minCol)
+			const newViewRow = viewRow + (cell[0] - minRow)
+			const newViewCol = viewCol + (cell[1] - minCol)
 
 			if (
-				newRow < 0 ||
-				newRow >= BOARD_SIZE ||
-				newCol < 0 ||
-				newCol >= BOARD_SIZE
+				newViewRow < 0 ||
+				newViewRow >= BOARD_SIZE ||
+				newViewCol < 0 ||
+				newViewCol >= BOARD_SIZE
 			) {
 				setHoverCells([])
 				return
 			}
+
+			const { row: newRow, col: newCol } = viewToBoard(
+				newViewRow,
+				newViewCol,
+				boardRotation,
+				BOARD_SIZE
+			)
 
 			if (board[newRow][newCol].occupied) {
 				setHoverCells([])
@@ -404,6 +435,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 					<Board
 						classes={classes}
 						board={board}
+						boardRotation={boardRotation}
 						onTileClick={handleTileClick}
 						onTileHover={handleTileHover}
 						hoverCells={hoverCells}

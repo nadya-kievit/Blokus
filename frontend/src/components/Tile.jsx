@@ -1,9 +1,22 @@
 import clsx from 'clsx'
 
-function Tile({ value, row, col, onClick, onHover, isHovered, isHoverValid, neighbors, hoverNeighbors, classes }) {
+function Tile({
+	value,
+	row,
+	col,
+	viewRow,
+	viewCol,
+	onClick,
+	onHover,
+	isHovered,
+	isHoverValid,
+	neighbors,
+	hoverNeighbors,
+	classes,
+}) {
 
 	const handleClick = () => {
-		onClick(row, col)
+		onClick(row, col, viewRow, viewCol)
 	}
 
 	const isOccupied = value.occupied
@@ -23,7 +36,7 @@ function Tile({ value, row, col, onClick, onHover, isHovered, isHoverValid, neig
 		<div
 			className={clsx(classes.tile, (isOccupied || isHovered) && classes.glassPieceTile)}
 			onClick={handleClick}
-			onMouseEnter={() => onHover(row, col)}
+			onMouseEnter={() => onHover(row, col, viewRow, viewCol)}
 			style={{
 				background:
 					isHovered

@@ -1,33 +1,80 @@
 import Tile from './Tile'
 
-function Board({ board, onTileClick, onTileHover, hoverCells, isHoverValid, classes }) {
+function viewToBoard(row, col, rotation, size) {
+	switch (rotation) {
+		case 90:
+			return { row: size - 1 - col, col: row }
+		case 180:
+			return { row: size - 1 - row, col: size - 1 - col }
+		case 270:
+			return { row: col, col: size - 1 - row }
+		default:
+			return { row, col }
+	}
+}
+
+function Board({
+	board,
+	boardRotation = 0,
+	onTileClick,
+	onTileHover,
+	hoverCells,
+	isHoverValid,
+	classes,
+}) {
+	const boardSize = board.length
+	const displayedCells = board.map((row, viewRow) =>
+		row.map((_, viewCol) => {
+			const boardPosition = viewToBoard(viewRow, viewCol, boardRotation, boardSize)
+
+			return {
+				...boardPosition,
+				value: board[boardPosition.row][boardPosition.col],
+			}
+		})
+	)
+
+	const isHoveredAt = (row, col) =>
+		hoverCells.some(cell => cell.row === row && cell.col === col)
+
+	const isHoveredViewCell = (viewRow, viewCol) => {
+		const cell = displayedCells[viewRow]?.[viewCol]
+
+		return cell ? isHoveredAt(cell.row, cell.col) : false
+	}
 
 	return (
 		<div className={classes.board}>
 
-			{board.map((row, rowIndex) =>
-				row.map((cell, colIndex) => (
+			{displayedCells.map((row, viewRow) =>
+				row.map((cell, viewCol) => (
 					<Tile
 						classes={classes}
-						key={`${rowIndex}-${colIndex}`}
-						value={cell}
-						row={rowIndex}
-						col={colIndex}
+						key={`${cell.row}-${cell.col}`}
+						value={cell.value}
+						row={cell.row}
+						col={cell.col}
+						viewRow={viewRow}
+						viewCol={viewCol}
 						onClick={onTileClick}
-						isHovered={hoverCells.some(cell => cell.row === rowIndex && cell.col === colIndex)}
+						isHovered={isHoveredAt(cell.row, cell.col)}
 						isHoverValid={isHoverValid}
 						onHover={onTileHover}
 						neighbors={{
-							top: rowIndex > 0 ? board[rowIndex - 1][colIndex] : null,
-							bottom: rowIndex < board.length - 1 ? board[rowIndex + 1][colIndex] : null,
-							left: colIndex > 0 ? board[rowIndex][colIndex - 1] : null,
-							right: colIndex < row.length - 1 ? board[rowIndex][colIndex + 1] : null,
+							top: viewRow > 0 ? displayedCells[viewRow - 1][viewCol].value : null,
+							bottom: viewRow < displayedCells.length - 1
+								? displayedCells[viewRow + 1][viewCol].value
+								: null,
+							left: viewCol > 0 ? displayedCells[viewRow][viewCol - 1].value : null,
+							right: viewCol < row.length - 1
+								? displayedCells[viewRow][viewCol + 1].value
+								: null,
 						}}
 						hoverNeighbors={{
-							top: hoverCells.some(cell => cell.row === rowIndex - 1 && cell.col === colIndex),
-							bottom: hoverCells.some(cell => cell.row === rowIndex + 1 && cell.col === colIndex),
-							left: hoverCells.some(cell => cell.row === rowIndex && cell.col === colIndex - 1),
-							right: hoverCells.some(cell => cell.row === rowIndex && cell.col === colIndex + 1),
+							top: isHoveredViewCell(viewRow - 1, viewCol),
+							bottom: isHoveredViewCell(viewRow + 1, viewCol),
+							left: isHoveredViewCell(viewRow, viewCol - 1),
+							right: isHoveredViewCell(viewRow, viewCol + 1),
 						}}
 					/>
 				))
