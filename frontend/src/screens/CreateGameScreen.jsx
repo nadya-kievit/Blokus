@@ -41,7 +41,7 @@ function CreateGameScreen({ onEnterGame }) {
 		<div className={classes.startPage}>
 			<h1 className={classes.gameTitle}>Blokus</h1>
 
-			<div className={classes.startPanel}>
+			<div className={classes.startPanel} style={{width: '500px'}}>
 				<h2>Play online</h2>
 
 				<p>Create a new room or join friends with their 6 digit invite code.</p>

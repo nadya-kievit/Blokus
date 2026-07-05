@@ -416,14 +416,6 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 						))}
 			</div>
 
-			{game?.status === 'playing' && (
-				<div className={classes.turnBanner}>
-					{canMove
-						? 'Your turn'
-						: `${currentPlayer?.name || 'Another player'} is thinking`}
-				</div>
-			)}
-
 			{lastMessage && (
 				<div className={classes.statusMessage}>
 					{lastMessage}
@@ -432,6 +424,29 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 
 			<div className={classes.gameMain}>
 				<div className={classes.boardCenter}>
+					{game?.status === 'playing' &&
+						<div className={classes.turnBanner}
+							style={{ '--turn-color': currentPlayer?.color || '#f3b51b' }}
+						>
+							<div className={classes.turnAvatar} aria-hidden="true">
+								<svg viewBox="0 0 24 24">
+									<circle cx="12" cy="8" r="4" />
+									<path d="M5.5 20a6.5 6.5 0 0 1 13 0" />
+								</svg>
+							</div>
+
+							<div className={classes.turnText}>
+								<div className={classes.turnTitle}>
+									{canMove ? 'Your Turn!' : currentPlayer?.name + '\'s Turn'}
+								</div>
+
+								<div className={classes.turnSubtitle}>
+									{canMove ? 'Place a piece on the board' : 'Waiting...'}
+								</div>
+							</div>
+						</div>
+					}
+
 					<Board
 						classes={classes}
 						board={board}

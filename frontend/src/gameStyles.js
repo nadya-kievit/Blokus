@@ -64,23 +64,29 @@ const gameStyles = () => ({
 	gameMain: {
 		flex: 1,
 		minHeight: 0,
-		display: 'grid',
-		gridTemplateColumns: 'minmax(620px, 700px) 430px',
-		gap: 28,
-		alignItems: 'center',
-		justifyContent: 'center',
-	},
-
-	boardCenter: {
-		position: 'static',
-		transform: 'none',
+		width: '100%',
+		position: 'relative',
 		display: 'flex',
 		alignItems: 'center',
 		justifyContent: 'center',
 	},
 
+	boardCenter: {
+		position: 'relative',
+		zIndex: 1,
+		display: 'flex',
+		flexDirection: 'column',
+		alignItems: 'center',
+		justifyContent: 'center',
+		gap: 12,
+	},
+
 	piecesRight: {
-		position: 'static',
+		position: 'absolute',
+		right: 32,
+		top: '50%',
+		transform: 'translateY(-50%)',
+
 		boxSizing: 'border-box',
 		width: 430,
 		height: '100%',
@@ -93,9 +99,9 @@ const gameStyles = () => ({
 		borderRadius: 14,
 		background: `
 			linear-gradient(
-				145deg,
-				rgba(250, 254, 255, 0.92),
-				rgba(235, 247, 253, 0.88)
+			145deg,
+			rgba(250, 254, 255, 0.92),
+			rgba(235, 247, 253, 0.88)
 			)
 		`,
 		boxShadow: '0 13px 30px rgba(67, 124, 163, 0.17)',
@@ -157,7 +163,6 @@ const gameStyles = () => ({
 	joinForm: {
 		display: 'flex',
 		gap: 10,
-
 		'& input': {
 			minWidth: 0,
 			flex: 1,
@@ -421,20 +426,66 @@ const gameStyles = () => ({
 	},
 
 	turnBanner: {
-		position: 'absolute',
-		left: '50%',
-		transform: 'translateX(-50%)',
-		zIndex: 3,
-		top: 152,
-		padding: '9px 14px',
-		borderRadius: 8,
-		background: 'rgba(255, 255, 255, 0.76)',
-		color: '#17496b',
-		fontSize: 14,
-		fontWeight: 750,
-		boxShadow: '0 6px 14px rgba(35, 72, 100, 0.16)',
-		backdropFilter: 'blur(8px)',
-		WebkitBackdropFilter: 'blur(8px)',
+		display: 'flex',
+		alignItems: 'center',
+		gap: 14,
+		width: 215,
+		maxWidth: 'calc(100vw - 48px)',
+		boxSizing: 'border-box',
+		padding: '12px 18px',
+		border: '1px solid rgba(255, 255, 255, 0.88)',
+		borderRadius: 14,
+		background: 'rgba(255, 255, 255, 0.86)',
+		color: '#123f61',
+		boxShadow: '0 10px 24px rgba(65, 119, 157, 0.17)',
+		backdropFilter: 'blur(12px)',
+		WebkitBackdropFilter: 'blur(12px)',
+	},
+
+	turnAvatar: {
+		flex: '0 0 auto',
+		width: 38,
+		height: 38,
+		borderRadius: '50%',
+		display: 'flex',
+		alignItems: 'center',
+		justifyContent: 'center',
+		background: 'var(--turn-color, #f3b51b)',
+		boxShadow: `
+			inset 0 2px 3px rgba(255, 255, 255, 0.5),
+			inset 0 -3px 5px rgba(0, 0, 0, 0.12),
+			0 4px 9px rgba(35, 72, 100, 0.16)
+		`,
+
+		'& svg': {
+			width: 23,
+			height: 23,
+			fill: '#16405f',
+			stroke: '#16405f',
+			strokeWidth: 1.8,
+			strokeLinecap: 'round',
+			strokeLinejoin: 'round',
+		},
+	},
+
+	turnText: {
+		minWidth: 0,
+		textAlign: 'left',
+	},
+
+	turnTitle: {
+		color: '#173f67',
+		fontSize: 16,
+		fontWeight: 850,
+		lineHeight: 1.08,
+	},
+
+	turnSubtitle: {
+		marginTop: 4,
+		color: '#42647d',
+		fontSize: 13,
+		fontWeight: 700,
+		lineHeight: 1.15,
 	},
 
 	statusMessage: {
@@ -532,15 +583,15 @@ const gameStyles = () => ({
 
 	pieceCardGrid: {
 		display: 'grid',
-		gridTemplateColumns: 'repeat(5, 72px)',
+		gridTemplateColumns: 'repeat(4, 72px)',
 		gap: 8,
 		justifyContent: 'space-between',
 	},
 
 	pieceCard: {
 		position: 'relative',
-		width: 72,
-		height: 72,
+		width: 86,
+		height: 86,
 		boxSizing: 'border-box',
 		border: '1px solid rgba(100, 145, 175, 0.08)',
 		borderRadius: 9,
@@ -658,8 +709,8 @@ const gameStyles = () => ({
 
 	board: {
 		display: 'grid',
-		gridTemplateColumns: 'repeat(20, 30px)',
-		gridTemplateRows: 'repeat(20, 30px)',
+		gridTemplateColumns: 'repeat(20, 35px)',
+		gridTemplateRows: 'repeat(20, 35px)',
 		width: 'fit-content',
 		height: 'fit-content',
 		padding: 10,
@@ -674,8 +725,8 @@ const gameStyles = () => ({
 	},
 
 	tile: {
-		width: 30,
-		height: 30,
+		width: 35,
+		height: 35,
 		boxSizing: 'border-box',
 		position: 'relative',
 		overflow: 'hidden',
