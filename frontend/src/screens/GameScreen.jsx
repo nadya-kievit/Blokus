@@ -640,6 +640,26 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 							))}
 						</div>
 					</div>
+
+					{isWaitingForPlayers && (
+						<div className={classes.piecePanelLockOverlay}>
+							<div className={classes.piecePanelLockIcon} aria-hidden="true">
+								<svg viewBox="0 0 24 24">
+									<rect x="5" y="10" width="14" height="10" rx="2" />
+									<path d="M8 10V7a4 4 0 0 1 8 0v3" />
+									<path d="M12 14v3" />
+								</svg>
+							</div>
+
+							<div className={classes.piecePanelLockMessage}>
+								Waiting for all players
+								<br />
+								to join before pieces
+								<br />
+								can be placed
+							</div>
+						</div>
+					)}
 				</div>
 			</div>
 		</div>

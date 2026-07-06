@@ -674,6 +674,66 @@ const gameStyles = () => ({
 		boxShadow: 'none !important',
 	},
 
+	piecePanelLockOverlay: {
+		position: 'absolute',
+		inset: 0,
+		zIndex: 4,
+		display: 'flex',
+		flexDirection: 'column',
+		alignItems: 'center',
+		justifyContent: 'center',
+		gap: 13,
+		padding: 24,
+		boxSizing: 'border-box',
+		borderRadius: 14,
+		background: `
+			radial-gradient(circle at 50% 47%, rgba(255, 255, 255, 0.54) 0%, rgba(255, 255, 255, 0.44) 18%, transparent 38%),
+			linear-gradient(
+				rgba(232, 244, 253, 0.42),
+				rgba(222, 238, 249, 0.5)
+			)
+		`,
+		backdropFilter: 'blur(1.5px) saturate(0.86)',
+		WebkitBackdropFilter: 'blur(1.5px) saturate(0.86)',
+		pointerEvents: 'auto',
+	},
+
+	piecePanelLockIcon: {
+		width: 40,
+		height: 40,
+		borderRadius: '50%',
+		display: 'flex',
+		alignItems: 'center',
+		justifyContent: 'center',
+		background: 'rgba(255, 255, 255, 0.82)',
+		border: '1px solid rgba(122, 157, 180, 0.34)',
+		boxShadow: `
+			0 8px 18px rgba(67, 124, 163, 0.12),
+			inset 0 1px 2px rgba(255, 255, 255, 0.9)
+		`,
+
+		'& svg': {
+			width: 22,
+			height: 22,
+			fill: 'none',
+			stroke: '#1f5c86',
+			strokeWidth: 1.8,
+			strokeLinecap: 'round',
+			strokeLinejoin: 'round',
+		},
+	},
+
+	piecePanelLockMessage: {
+		maxWidth: 210,
+		padding: '2px 8px',
+		color: '#123f61',
+		fontSize: 15,
+		fontWeight: 850,
+		lineHeight: 1.18,
+		textAlign: 'center',
+		textShadow: '0 1px 2px rgba(255, 255, 255, 0.95)',
+	},
+
 	glassPieceTile: {
 		boxShadow: `
 			inset 1px 1px 3px rgba(255, 255, 255, 0.45),
