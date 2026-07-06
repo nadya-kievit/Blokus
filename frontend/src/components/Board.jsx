@@ -13,7 +13,16 @@ function viewToBoard(row, col, rotation, size) {
 	}
 }
 
-function Board({ board, boardRotation = 0, onTileClick, onTileHover, hoverCells, isHoverValid, classes }) {
+function Board({
+	board,
+	boardRotation = 0,
+	onTileClick,
+	onTileHover,
+	onBoardLeave,
+	hoverCells,
+	isHoverValid,
+	classes,
+}) {
 	const boardSize = board.length
 	const displayedCells = board.map((row, viewRow) =>
 		row.map((_, viewCol) => {
@@ -36,7 +45,7 @@ function Board({ board, boardRotation = 0, onTileClick, onTileHover, hoverCells,
 	}
 
 	return (
-		<div className={classes.board}>
+		<div className={classes.board} onMouseLeave={onBoardLeave}>
 
 			{displayedCells.map((row, viewRow) =>
 				row.map((cell, viewCol) => (

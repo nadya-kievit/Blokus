@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { makeStyles } from 'tss-react/mui'
 import clsx from 'clsx'
 import {
@@ -66,6 +66,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 
 	const storageKey = `blokus-player-${gameId}`
 	const socketRef = useRef(null)
+	const lastHoverTargetRef = useRef(null)
 
 	const [credentials] = useState(() => {
 		const stored = localStorage.getItem(storageKey)
@@ -248,7 +249,14 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 		setHoverCells([])
 	}
 
-	const handleTileHover = async (row, col, viewRow, viewCol) => {
+	const handleBoardLeave = useCallback(() => {
+		lastHoverTargetRef.current = null
+		setHoverCells([])
+	}, [])
+
+	const handleTileHover = useCallback(async (row, col, viewRow, viewCol) => {
+		lastHoverTargetRef.current = { row, col, viewRow, viewCol }
+
 		if (!canMove || !selectedPiece || !credentials) {
 			setHoverCells([])
 			return
@@ -305,7 +313,20 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 			setIsHoverValid(false)
 			setLastMessage(err.message)
 		}
-	}
+	}, [board, boardRotation, canMove, credentials, gameId, selectedPiece])
+
+	useEffect(() => {
+		const hoverTarget = lastHoverTargetRef.current
+
+		if (!hoverTarget || !selectedPiece) return
+
+		handleTileHover(
+			hoverTarget.row,
+			hoverTarget.col,
+			hoverTarget.viewRow,
+			hoverTarget.viewCol
+		)
+	}, [handleTileHover, selectedPiece])
 
 	if (!game) {
 		return (
@@ -453,6 +474,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 						boardRotation={boardRotation}
 						onTileClick={handleTileClick}
 						onTileHover={handleTileHover}
+						onBoardLeave={handleBoardLeave}
 						hoverCells={hoverCells}
 						isHoverValid={isHoverValid}
 					/>
