@@ -162,19 +162,50 @@ const gameStyles = () => ({
 
 	joinForm: {
 		display: 'flex',
-		gap: 10,
+		alignItems: 'center',
+		justifyContent: 'center',
+		gap: 11,
+
+		'& button': {
+			alignSelf: 'stretch',
+			minWidth: 104,
+		},
+	},
+
+	codeInputGroup: {
+		display: 'grid',
+		gridTemplateColumns: 'repeat(6, 46px)',
+		gap: 8,
+
 		'& input': {
-			minWidth: 0,
-			flex: 1,
-			border: '1px solid rgba(23, 73, 107, 0.35)',
-			borderRadius: 8,
-			padding: '10px 12px',
-			background: 'rgba(255, 255, 255, 0.8)',
-			color: '#17496b',
+			width: 46,
+			height: 58,
+			boxSizing: 'border-box',
+			border: '1px solid rgba(114, 143, 162, 0.28)',
+			borderRadius: 7,
+			padding: 0,
+			background: 'rgba(255, 255, 255, 0.78)',
+			color: '#123f61',
 			font: 'inherit',
-			fontWeight: 750,
-			letterSpacing: 5,
+			fontSize: 24,
+			fontWeight: 850,
+			lineHeight: 1,
 			textAlign: 'center',
+			boxShadow: `
+				inset 0 1px 2px rgba(255, 255, 255, 0.85),
+				0 4px 10px rgba(35, 72, 100, 0.09)
+			`,
+			outline: 'none',
+			transition: 'border-color 0.12s ease, box-shadow 0.12s ease, transform 0.12s ease',
+
+			'&:focus': {
+				borderColor: 'rgba(46, 105, 220, 0.55)',
+				boxShadow: `
+					0 0 0 3px rgba(46, 105, 220, 0.13),
+					0 6px 13px rgba(35, 72, 100, 0.13)
+				`,
+				transform: 'translateY(-1px)',
+			},
 		},
 	},
 
