@@ -21,6 +21,8 @@ const PLAYER_SEATS = [
 	{ name: 'Green', color: '#28a745' },
 	{ name: 'Yellow', color: '#f3b51b' },
 ]
+const PLAYER_PANEL_ORDER = ['Green', 'Red', 'Blue', 'Yellow']
+const PROGRESS_SEGMENTS = 18
 
 const EMPTY_BOARD = Array(BOARD_SIZE).fill(null).map(() =>
 	Array(BOARD_SIZE).fill(null).map(() => ({
@@ -66,6 +68,17 @@ function rotationForCorner(corner) {
 	if (corner.row === BOARD_SIZE - 1 && corner.col === 0) return 270
 
 	return 0
+}
+
+function placedBlockCount(player) {
+	return (player?.pieces || []).reduce(
+		(total, piece) => total + (piece.placed ? piece.cells.length : 0),
+		0
+	)
+}
+
+function totalBlockCount(player) {
+	return (player?.pieces || []).reduce((total, piece) => total + piece.cells.length, 0)
 }
 
 function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
@@ -124,6 +137,28 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 	)
 	const readyCount = game?.players.length || 0
 	const isWaitingForPlayers = game?.status !== 'playing'
+	const playerProgress = useMemo(
+		() => {
+			const knownTotalBlocks = totalBlockCount(game?.players[0])
+
+			return PLAYER_PANEL_ORDER.map(name => {
+				const seat = PLAYER_SEATS.find(playerSeat => playerSeat.name === name)
+				const player = game?.players.find(joinedPlayer => joinedPlayer.name === name)
+				const placedBlocks = placedBlockCount(player)
+				const totalBlocks = player ? totalBlockCount(player) : knownTotalBlocks
+
+				return {
+					name,
+					color: seat?.color || player?.color || '#0077ee',
+					player,
+					placedBlocks,
+					totalBlocks,
+					progress: totalBlocks > 0 ? placedBlocks / totalBlocks : 0,
+				}
+			})
+		},
+		[game]
+	)
 
 	useEffect(() => {
 		if (game && !credentials) {
@@ -415,41 +450,6 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 				</div>
 			</header>
 
-			<div className={classes.playersBar}>
-				{game?.players.map(player => (
-					<div
-						key={player.id}
-						className={clsx(classes.playerPill, {
-							[classes.active]: player.id === game.currentPlayerId,
-						})}
-						style={{ borderColor: player.color }}
-					>
-						<span
-							className={classes.playerColor}
-							style={{ background: player.color }}
-						/>
-
-						{player.name}
-
-						<span className={classes.playerSeat}>
-							{player.connected ? 'online' : 'offline'}
-						</span>
-					</div>
-				))}
-
-				{game &&
-					Array(4 - game.players.length)
-						.fill(null)
-						.map((_, index) => (
-							<div
-								key={`empty-${index}`}
-								className={clsx(classes.playerPill, classes.empty)}
-							>
-								Waiting
-							</div>
-						))}
-			</div>
-
 			{lastMessage && (
 				<div className={classes.statusMessage}>
 					{lastMessage}
@@ -457,6 +457,99 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 			)}
 
 			<div className={classes.gameMain}>
+				<aside className={classes.playersLeftPanel}>
+					<div className={classes.playerPanelGrid}>
+						{playerProgress.map(progress => {
+							const isMe = progress.player?.id === credentials.playerId
+							const isActiveTurn = progress.player?.id === game.currentPlayerId
+
+							return (
+								<div
+									key={progress.name}
+									className={clsx(classes.playerStatusCard, {
+										[classes.playerStatusActive]: isActiveTurn,
+										[classes.playerStatusEmpty]: !progress.player,
+									})}
+									style={{ '--player-color': progress.color }}
+								>
+									<div className={classes.playerStatusHeader}>
+										<div className={classes.playerStatusName}>
+											<span className={classes.playerStatusColor} />
+											{progress.name}
+										</div>
+
+										{isMe && (
+											<span className={classes.playerStatusYou}>You</span>
+										)}
+									</div>
+
+									<div className={classes.playerStatusConnection}>
+										<span />
+										{progress.player
+											? progress.player.connected ? 'Online' : 'Offline'
+											: 'Waiting'}
+									</div>
+
+									<div className={classes.playerStatusBody}>
+										<div>
+											<div className={classes.playerStatusBlocks}>
+												{progress.placedBlocks}
+											</div>
+
+											<div className={classes.playerStatusCaption}>
+												blocks placed
+											</div>
+										</div>
+									</div>
+								</div>
+							)
+						})}
+					</div>
+
+					<div className={classes.progressOverview}>
+						<div className={classes.progressOverviewTitle}>
+							Progress overview
+						</div>
+
+						<div className={classes.progressOverviewCard}>
+							{playerProgress.map(progress => {
+								const isMe = progress.player?.id === credentials.playerId
+								const filledSegments = Math.round(progress.progress * PROGRESS_SEGMENTS)
+
+								return (
+									<div key={progress.name} className={classes.progressOverviewRow}>
+										<div className={classes.progressOverviewName}>
+											<span style={{ background: progress.color }} />
+											{progress.name}
+											{isMe ? ' (You)' : ''}
+										</div>
+
+										<div
+											className={classes.progressSegments}
+											aria-label={`${progress.placedBlocks} of ${progress.totalBlocks || 0} blocks placed`}
+										>
+											{Array.from({ length: PROGRESS_SEGMENTS }).map((_, index) => (
+												<span
+													key={index}
+													style={{
+														background: index < filledSegments
+															? progress.color
+															: '#dce7ef',
+													}}
+												/>
+											))}
+										</div>
+
+										<div className={classes.progressOverviewCount}>
+											{progress.placedBlocks} placed
+										</div>
+									</div>
+								)
+							})}
+						</div>
+					</div>
+				</aside>
+
 				<div className={classes.boardCenter}>
 					{game?.status === 'playing' &&
 						<div className={classes.turnBanner}
