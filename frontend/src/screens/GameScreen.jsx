@@ -536,10 +536,17 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 						</div>
 
 						<div className={classes.remainingDots} aria-hidden="true">
-							{pieces.map(piece => (
+							{Array.from({ length: (pieces.length - (pieces.filter(piece => piece.placed).length)) }).map((_, index) => (
 								<span
-									key={piece.name}
-									className={piece.placed ? classes.used : undefined}
+									key={`not-placed-${index}`}
+									className={classes.unused}
+									style={{ '--piece-color': me?.color }}
+								/>
+							))}
+							{Array.from({ length: (pieces.filter(piece => piece.placed).length) }).map((_, index) => (
+								<span
+									key={`placed-${index}`}
+									className={classes.used}
 									style={{ '--piece-color': me?.color }}
 								/>
 							))}
