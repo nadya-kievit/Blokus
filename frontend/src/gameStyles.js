@@ -738,6 +738,131 @@ const gameStyles = () => ({
 		},
 	},
 
+	boardFrame: {
+		position: 'relative',
+		width: 'fit-content',
+		height: 'fit-content',
+	},
+
+	boardLockOverlay: {
+		position: 'absolute',
+		inset: 0,
+		zIndex: 6,
+		display: 'flex',
+		alignItems: 'center',
+		justifyContent: 'center',
+		borderRadius: 18,
+		background: `
+			linear-gradient(
+				rgba(222, 240, 255, 0.48),
+				rgba(205, 229, 249, 0.58)
+			)
+		`,
+		backdropFilter: 'blur(1px)',
+		WebkitBackdropFilter: 'blur(1px)',
+		pointerEvents: 'auto',
+	},
+
+	readyDial: {
+		position: 'relative',
+		width: 230,
+		height: 230,
+		display: 'flex',
+		alignItems: 'center',
+		justifyContent: 'center',
+		borderRadius: '50%',
+		background: 'rgba(255, 255, 255, 0.62)',
+		boxShadow: `
+			0 18px 45px rgba(60, 139, 242, 0.2),
+			inset 0 0 0 1px rgba(255, 255, 255, 0.9)
+		`,
+		backdropFilter: 'blur(8px)',
+
+		// remove old dotted pseudo ring
+		'&::before': {
+			content: 'none',
+		},
+		'&::after': {
+			content: 'none',
+		},
+	},
+
+	readyRingSvg: {
+		position: 'absolute',
+		inset: 0,
+		width: '100%',
+		height: '100%',
+		overflow: 'visible',
+	},
+
+	readyArc: {
+		fill: 'none',
+		stroke: 'var(--seat-color)',
+		strokeWidth: 8,
+		strokeLinecap: 'round',
+		filter: 'drop-shadow(0 0 7px rgba(60, 139, 242, 0.22))',
+		transition: 'stroke 180ms ease',
+	},
+
+	readySeatDot: {
+		fill: '#d9e4ee',
+		stroke: 'rgba(255, 255, 255, 0.95)',
+		strokeWidth: 5,
+		filter: 'drop-shadow(0 5px 10px rgba(33, 84, 130, 0.22))',
+		transition: 'fill 180ms ease, filter 180ms ease',
+	},
+
+	readySeatDotFilled: {
+		fill: 'var(--seat-color)',
+		filter: 'drop-shadow(0 5px 14px rgba(232, 67, 67, 0.32))',
+	},
+
+	readyContent: {
+		position: 'relative',
+		zIndex: 1,
+		display: 'flex',
+		flexDirection: 'column',
+		alignItems: 'center',
+		justifyContent: 'center',
+		width: 145,
+		height: 145,
+		color: '#17496b',
+		textAlign: 'center',
+	},
+
+	readyIcon: {
+		width: 34,
+		height: 34,
+		marginBottom: 8,
+		fill: 'none',
+		stroke: '#3c8bf2',
+		strokeWidth: 1.8,
+		strokeLinecap: 'round',
+		strokeLinejoin: 'round',
+	},
+
+	readyCount: {
+		color: '#17496b',
+		fontSize: 31,
+		fontWeight: 900,
+		lineHeight: 1,
+	},
+
+	readyLabel: {
+		marginTop: 4,
+		color: '#315b78',
+		fontSize: 14,
+		fontWeight: 750,
+	},
+
+	readyMessage: {
+		marginTop: 14,
+		color: '#52728a',
+		fontSize: 13,
+		fontWeight: 650,
+		lineHeight: 1.25,
+	},
+
 	board: {
 		display: 'grid',
 		gridTemplateColumns: 'repeat(20, 35px)',

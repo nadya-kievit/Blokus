@@ -14,6 +14,13 @@ import Piece from '../components/Piece'
 const useStyles = makeStyles()(gameStyles)
 
 const BOARD_SIZE = 20
+const REQUIRED_PLAYERS = 4
+const PLAYER_SEATS = [
+	{ name: 'Red', color: '#e34242' },
+	{ name: 'Blue', color: '#0077ee' },
+	{ name: 'Green', color: '#28a745' },
+	{ name: 'Yellow', color: '#f3b51b' },
+]
 
 const EMPTY_BOARD = Array(BOARD_SIZE).fill(null).map(() =>
 	Array(BOARD_SIZE).fill(null).map(() => ({
@@ -111,6 +118,12 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 
 	const board = game?.board || EMPTY_BOARD
 	const boardRotation = rotationForCorner(me?.corner)
+	const joinedPlayerNames = useMemo(
+		() => new Set((game?.players || []).map(player => player.name)),
+		[game]
+	)
+	const readyCount = game?.players.length || 0
+	const isWaitingForPlayers = game?.status !== 'playing'
 
 	useEffect(() => {
 		if (game && !credentials) {
@@ -468,16 +481,91 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 						</div>
 					}
 
-					<Board
-						classes={classes}
-						board={board}
-						boardRotation={boardRotation}
-						onTileClick={handleTileClick}
-						onTileHover={handleTileHover}
-						onBoardLeave={handleBoardLeave}
-						hoverCells={hoverCells}
-						isHoverValid={isHoverValid}
-					/>
+					<div className={classes.boardFrame}>
+						<Board
+							classes={classes}
+							board={board}
+							boardRotation={boardRotation}
+							onTileClick={handleTileClick}
+							onTileHover={handleTileHover}
+							onBoardLeave={handleBoardLeave}
+							hoverCells={hoverCells}
+							isHoverValid={isHoverValid}
+						/>
+
+						{isWaitingForPlayers && (
+							<div className={classes.boardLockOverlay}>
+								<div className={classes.readyDial}>
+									<svg
+										className={classes.readyRingSvg}
+										viewBox="0 0 220 220"
+										aria-hidden="true"
+									>
+										{PLAYER_SEATS.map((seat, index) => {
+											const isReady = joinedPlayerNames.has(seat.name)
+
+											const arcPaths = [
+												'M 110 20 A 90 90 0 0 1 200 110',
+												'M 200 110 A 90 90 0 0 1 110 200',
+												'M 110 200 A 90 90 0 0 1 20 110',
+												'M 20 110 A 90 90 0 0 1 110 20',
+											]
+
+											return (
+												<path
+													key={seat.name}
+													d={arcPaths[index]}
+													className={classes.readyArc}
+													style={{
+														'--seat-color': isReady ? seat.color : '#d9e4ee',
+													}}
+												/>
+											)
+										})}
+
+										{PLAYER_SEATS.map((seat, index) => {
+											const isReady = joinedPlayerNames.has(seat.name)
+
+											const dotPositions = [
+												{ cx: 110, cy: 20 },
+												{ cx: 200, cy: 110 },
+												{ cx: 110, cy: 200 },
+												{ cx: 20, cy: 110 },
+											]
+
+											return (
+												<circle
+													key={`${seat.name}-dot`}
+													cx={dotPositions[index].cx}
+													cy={dotPositions[index].cy}
+													r="12"
+													className={clsx(classes.readySeatDot, {
+														[classes.readySeatDotFilled]: isReady,
+													})}
+													style={{ '--seat-color': seat.color }}
+												/>
+											)
+										})}
+									</svg>
+
+									<div className={classes.readyContent}>
+
+										<div className={classes.readyCount}>
+											{readyCount} of {REQUIRED_PLAYERS}
+										</div>
+
+										<div className={classes.readyLabel}>players ready</div>
+
+										<div className={classes.readyMessage}>
+											Waiting for more
+											<br />
+											players...
+										</div>
+									</div>
+								</div>
+							</div>
+						)}
+					</div>
 				</div>
 
 				<div className={classes.piecesRight}>
