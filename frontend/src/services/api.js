@@ -45,6 +45,16 @@ export async function quitGame(gameId, credentials) {
   return parseResponse(response)
 }
 
+export async function restartGame(gameId, credentials) {
+  const response = await fetch(`${API_BASE}/games/${gameId}/restart`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(credentials)
+  })
+
+  return parseResponse(response)
+}
+
 export async function validateMove(gameId, credentials, cells, pieceName) {
   const response = await fetch(`${API_BASE}/games/${gameId}/validate-move`, {
     method: 'POST',

@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 
-from app.main import app, games
+from app.main import app, finish_game, games, refresh_out_of_moves
 
 
 client = TestClient(app)
@@ -182,3 +182,64 @@ def test_other_players_do_not_count_as_diagonal_contact():
         "valid": False,
         "reason": "Piece must touch one of your pieces diagonally.",
     }
+
+
+def test_player_with_no_available_moves_is_marked_and_skipped():
+    game_id, players = create_joined_game()
+    game = games[game_id]
+    game["board"].place_piece([{"row": 0, "col": 0}], player=players[1]["playerId"])
+
+    refresh_out_of_moves(game)
+
+    state = client.get(f"/games/{game_id}").json()
+    blue = next(player for player in state["players"] if player["name"] == "Blue")
+
+    assert state["status"] == "playing"
+    assert blue["isOutOfMoves"] is True
+    assert "Blue ran out of moves" in state["notice"]
+
+
+def test_game_finishes_with_leaderboard_when_everyone_is_out_of_moves():
+    game_id, _ = create_joined_game()
+    game = games[game_id]
+
+    for row in range(20):
+        for col in range(20):
+            game["board"].grid[row][col].update({"occupied": True, "player": "blocked"})
+
+    for index, player in enumerate(game["players"]):
+        for piece in player["pieces"][:index + 1]:
+            piece["placed"] = True
+
+    refresh_out_of_moves(game)
+    state = client.get(f"/games/{game_id}").json()
+
+    assert state["status"] == "finished"
+    assert state["leaderboard"][0]["name"] == "Yellow"
+    assert state["winnerId"] == game["players"][3]["id"]
+    assert state["currentPlayerId"] is None
+
+
+def test_finished_game_can_restart_with_same_players_and_winner_first():
+    game_id, players = create_joined_game()
+    game = games[game_id]
+    game["board"].place_piece([{"row": 0, "col": 0}], player=players[1]["playerId"])
+
+    for piece in game["players"][1]["pieces"][:3]:
+        piece["placed"] = True
+
+    finish_game(game)
+
+    response = client.post(
+        f"/games/{game_id}/restart",
+        json={"playerId": players[0]["playerId"], "playerToken": players[0]["playerToken"]},
+    )
+    state = response.json()
+
+    assert response.status_code == 200
+    assert state["status"] == "playing"
+    assert state["currentPlayerId"] == players[1]["playerId"]
+    assert len(state["players"]) == 4
+    assert state["board"][0][0]["occupied"] is False
+    assert all(not piece["placed"] for player in state["players"] for piece in player["pieces"])
+    assert "Red goes first" in state["notice"]

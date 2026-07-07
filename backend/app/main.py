@@ -67,6 +67,11 @@ class QuitRequest(BaseModel):
     playerToken: str
 
 
+class RestartRequest(BaseModel):
+    playerId: str
+    playerToken: str
+
+
 def make_piece_set():
     return [
         {
@@ -89,6 +94,8 @@ def create_game_state(game_id):
         "hasStarted": False,
         "nextPlayerNumber": 1,
         "notice": None,
+        "winnerId": None,
+        "leaderboard": [],
     }
 
 
@@ -100,6 +107,7 @@ def public_player(player):
         "corner": player["corner"],
         "connected": player["connected"],
         "pieces": player["pieces"],
+        "isOutOfMoves": player.get("isOutOfMoves", False),
     }
 
 
@@ -111,11 +119,14 @@ def game_snapshot(game):
 
     return {
         "gameId": game["gameId"],
+        "inviteCode": game["gameId"],
         "board": game["board"].get_grid(),
         "players": [public_player(player) for player in game["players"]],
         "currentPlayerId": current_player_id,
         "moveHistory": game["moveHistory"],
         "status": game["status"],
+        "winnerId": game["winnerId"],
+        "leaderboard": game["leaderboard"],
         "availableColors": [
             seat for seat in PLAYER_COLORS
             if not any(player["name"] == seat["name"] for player in game["players"])
@@ -154,7 +165,13 @@ def validate_player_move(game, player, move):
     if game["status"] != "playing":
         return {
             "valid": False,
-            "reason": "Game starts after all four players join.",
+            "reason": "This game is not accepting moves.",
+        }
+
+    if player.get("isOutOfMoves"):
+        return {
+            "valid": False,
+            "reason": "You are out of moves.",
         }
 
     current_player = game["players"][game["currentTurnIndex"]]
@@ -194,6 +211,139 @@ def validate_player_move(game, player, move):
     )
 
 
+def normalize_cells(cells):
+    min_row = min(row for row, _ in cells)
+    min_col = min(col for _, col in cells)
+    return tuple(sorted((row - min_row, col - min_col) for row, col in cells))
+
+
+def rotate_cells(cells, rotation):
+    rotated = []
+
+    for row, col in cells:
+        if rotation == 90:
+            rotated.append((-col, row))
+        elif rotation == 180:
+            rotated.append((-row, -col))
+        elif rotation == 270:
+            rotated.append((col, -row))
+        else:
+            rotated.append((row, col))
+
+    return rotated
+
+
+def piece_orientations(piece):
+    orientations = []
+    seen = set()
+
+    for rotation in [0, 90, 180, 270]:
+        normalized = normalize_cells(rotate_cells(piece["cells"], rotation))
+        if normalized not in seen:
+            seen.add(normalized)
+            orientations.append(normalized)
+
+    return orientations
+
+
+def player_block_count(player):
+    return sum(
+        len(piece["cells"])
+        for piece in player["pieces"]
+        if piece["placed"]
+    )
+
+
+def can_player_move(game, player):
+    if game["status"] != "playing":
+        return False
+
+    is_first_move = not any(piece["placed"] for piece in player["pieces"])
+    corner = player["corner"]
+
+    for piece in player["pieces"]:
+        if piece["placed"]:
+            continue
+
+        for orientation in piece_orientations(piece):
+            max_row = max(row for row, _ in orientation)
+            max_col = max(col for _, col in orientation)
+
+            for row_offset in range(BOARD_SIZE - max_row):
+                for col_offset in range(BOARD_SIZE - max_col):
+                    cells = [
+                        {
+                            "row": row + row_offset,
+                            "col": col + col_offset,
+                        }
+                        for row, col in orientation
+                    ]
+                    result = validate_move(
+                        board_grid=game["board"].get_grid(),
+                        cells=cells,
+                        is_first_move=is_first_move,
+                        player_id=player["id"],
+                        first_corner=(corner["row"], corner["col"]),
+                    )
+
+                    if result["valid"]:
+                        return True
+
+    return False
+
+
+def make_leaderboard(game):
+    leaderboard = [
+        {
+            "playerId": player["id"],
+            "name": player["name"],
+            "color": player["color"],
+            "blocksPlaced": player_block_count(player),
+        }
+        for player in game["players"]
+    ]
+    leaderboard.sort(key=lambda entry: entry["blocksPlaced"], reverse=True)
+    return leaderboard
+
+
+def finish_game(game):
+    leaderboard = make_leaderboard(game)
+    winner = leaderboard[0] if leaderboard else None
+
+    game["status"] = "finished"
+    game["winnerId"] = winner["playerId"] if winner else None
+    game["leaderboard"] = leaderboard
+    game["currentTurnIndex"] = 0
+    if winner:
+        game["notice"] = f'Game over. {winner["name"]} won with {winner["blocksPlaced"]} blocks.'
+    else:
+        game["notice"] = "Game over."
+
+
+def refresh_out_of_moves(game):
+    newly_out = []
+
+    if game["status"] != "playing":
+        return newly_out
+
+    for player in game["players"]:
+        if player.get("isOutOfMoves"):
+            continue
+
+        if not can_player_move(game, player):
+            player["isOutOfMoves"] = True
+            newly_out.append(player)
+
+    if newly_out:
+        names = ", ".join(player["name"] for player in newly_out)
+        game["notice"] = f"{names} ran out of moves. Their turns will be skipped."
+
+    if game["players"] and all(player.get("isOutOfMoves") for player in game["players"]):
+        finish_game(game)
+
+    return newly_out
+
+
 async def broadcast_game(game_id):
     sockets = list(connections.get(game_id, []))
     if not sockets:
@@ -216,11 +366,20 @@ async def broadcast_game(game_id):
 
 
 def advance_turn(game):
-    game["currentTurnIndex"] = (game["currentTurnIndex"] + 1) % len(game["players"])
+    if game["status"] != "playing" or not game["players"]:
+        return
+
+    for offset in range(1, len(game["players"]) + 1):
+        next_index = (game["currentTurnIndex"] + offset) % len(game["players"])
+
+        if not game["players"][next_index].get("isOutOfMoves"):
+            game["currentTurnIndex"] = next_index
+            return
 
 
 def remove_player_from_game(game, player):
     removed_index = game["players"].index(player)
+    was_finished = game["status"] == "finished"
     current_player_id = None
     next_player_id = None
     if game["status"] == "playing" and game["players"]:
@@ -241,6 +400,10 @@ def remove_player_from_game(game, player):
     if not game["players"]:
         game["status"] = "waiting"
         game["currentTurnIndex"] = 0
+        game["winnerId"] = None
+        game["leaderboard"] = []
+    elif was_finished:
+        finish_game(game)
     elif game["hasStarted"]:
         game["status"] = "playing"
         desired_player_id = next_player_id if current_player_id == player["id"] else current_player_id
@@ -248,6 +411,8 @@ def remove_player_from_game(game, player):
             (index for index, joined in enumerate(game["players"]) if joined["id"] == desired_player_id),
             0,
         )
+        game["winnerId"] = None
+        game["leaderboard"] = []
 
     game["notice"] = f'{player["name"]} left the game. Their pieces were removed.'
 
@@ -291,6 +456,7 @@ async def join_game(game_id: str, request: JoinRequest):
         "token": secrets.token_urlsafe(16),
         "pieces": make_piece_set(),
         "connected": False,
+        "isOutOfMoves": False,
     }
 
     game["players"].append(player)
@@ -316,6 +482,38 @@ async def quit_game(game_id: str, request: QuitRequest):
     remove_player_from_game(game, player)
     await broadcast_game(game_id)
     return {"success": True}
+
+
+@app.post("/games/{game_id}/restart")
+async def restart_game(game_id: str, request: RestartRequest):
+    game = get_game_or_404(game_id)
+    player = authenticate_player(game, request.playerId, request.playerToken)
+
+    if game["status"] != "finished":
+        raise HTTPException(status_code=409, detail="Only finished games can be restarted.")
+
+    winner_id = game["winnerId"]
+    game["board"] = Board()
+    game["moveHistory"] = []
+    game["status"] = "playing"
+    game["hasStarted"] = True
+    game["winnerId"] = None
+    game["leaderboard"] = []
+
+    for joined_player in game["players"]:
+        joined_player["pieces"] = make_piece_set()
+        joined_player["isOutOfMoves"] = False
+
+    game["currentTurnIndex"] = next(
+        (index for index, joined_player in enumerate(game["players"]) if joined_player["id"] == winner_id),
+        game["players"].index(player),
+    )
+    first_player = game["players"][game["currentTurnIndex"]]
+    game["notice"] = f'New game started. {first_player["name"]} goes first.'
+
+    await broadcast_game(game_id)
+
+    return game_snapshot(game)
 
 
 @app.post("/games/{game_id}/validate-move")
@@ -383,6 +581,7 @@ async def game_websocket(websocket: WebSocket, game_id: str, playerId: str, toke
                     "pieceName": move.pieceName,
                     "cells": move.cells,
                 })
+                refresh_out_of_moves(game)
                 advance_turn(game)
                 await broadcast_game(game_id)
 

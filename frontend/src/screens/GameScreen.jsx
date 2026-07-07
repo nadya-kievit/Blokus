@@ -5,6 +5,7 @@ import {
 	gameSocketUrl,
 	getGame,
 	quitGame,
+	restartGame,
 	validateMove,
 } from '../services/api'
 import gameStyles from '../gameStyles'
@@ -101,6 +102,8 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 	const [connectionStatus, setConnectionStatus] = useState('joining')
 	const [lastMessage, setLastMessage] = useState('')
 	const [isQuitting, setIsQuitting] = useState(false)
+	const [isRestarting, setIsRestarting] = useState(false)
+	const [isWinnerModalClosed, setIsWinnerModalClosed] = useState(false)
 
 	const me = useMemo(
 		() => game?.players.find(player => player.id === credentials?.playerId),
@@ -130,13 +133,19 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 		game.currentPlayerId === credentials?.playerId
 
 	const board = game?.board || EMPTY_BOARD
+	const isFinished = game?.status === 'finished'
 	const boardRotation = rotationForCorner(me?.corner)
+	const winner = useMemo(
+		() => game?.players.find(player => player.id === game?.winnerId),
+		[game]
+	)
+	const leaderboard = game?.leaderboard || []
 	const joinedPlayerNames = useMemo(
 		() => new Set((game?.players || []).map(player => player.name)),
 		[game]
 	)
 	const readyCount = game?.players.length || 0
-	const isWaitingForPlayers = game?.status !== 'playing'
+	const isWaitingForPlayers = game?.status === 'waiting'
 	const playerProgress = useMemo(
 		() => {
 			const knownTotalBlocks = totalBlockCount(game?.players[0])
@@ -165,6 +174,10 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 			onNeedsColor()
 		}
 	}, [game, credentials, onNeedsColor])
+
+	useEffect(() => {
+		setIsWinnerModalClosed(false)
+	}, [game?.winnerId])
 
 	useEffect(() => {
 		let isActive = true
@@ -279,6 +292,26 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 		} catch (err) {
 			setLastMessage(err.message)
 			setIsQuitting(false)
+		}
+	}
+
+	const handleRestart = async () => {
+		if (!credentials || game?.status !== 'finished') {
+			return
+		}
+
+		setIsRestarting(true)
+
+		try {
+			const restartedGame = await restartGame(gameId, credentials)
+			setGame(restartedGame)
+			setSelectedPieceName(null)
+			setHoverCells([])
+			setLastMessage(restartedGame.notice || '')
+		} catch (err) {
+			setLastMessage(err.message)
+		} finally {
+			setIsRestarting(false)
 		}
 	}
 
@@ -486,7 +519,9 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 									<div className={classes.playerStatusConnection}>
 										<span />
 										{progress.player
-											? progress.player.connected ? 'Online' : 'Offline'
+											? progress.player.isOutOfMoves || isFinished
+												? 'Out of moves'
+												: progress.player.connected ? 'Online' : 'Offline'
 											: 'Waiting'}
 									</div>
 
@@ -551,9 +586,10 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 				</aside>
 
 				<div className={classes.boardCenter}>
-					{game?.status === 'playing' &&
-						<div className={classes.turnBanner}
-							style={{ '--turn-color': currentPlayer?.color || '#f3b51b' }}
+					{(game?.status === 'playing' || isFinished) &&
+						<div
+							className={clsx(classes.turnBanner, isFinished && classes.finishedBanner)}
+							style={{ '--turn-color': isFinished ? winner?.color || '#f3b51b' : currentPlayer?.color || '#f3b51b' }}
 						>
 							<div className={classes.turnAvatar} aria-hidden="true">
 								<svg viewBox="0 0 24 24">
@@ -564,13 +600,32 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 
 							<div className={classes.turnText}>
 								<div className={classes.turnTitle}>
-									{canMove ? 'Your Turn!' : currentPlayer?.name + '\'s Turn'}
+									{isFinished
+										? `${winner?.name || 'A player'} won!`
+										: canMove ? 'Your Turn!' : currentPlayer?.name + '\'s Turn'}
 								</div>
 
 								<div className={classes.turnSubtitle}>
-									{canMove ? 'Place a piece on the board' : 'Waiting...'}
+									{isFinished
+										? 'Game finished'
+										: canMove ? 'Place a piece on the board' : 'Waiting...'}
 								</div>
 							</div>
+
+							{isFinished && (
+								<button
+									className={classes.restartButton}
+									onClick={handleRestart}
+									disabled={isRestarting}
+								>
+									<svg aria-hidden="true" viewBox="0 0 24 24">
+										<path d="M3 12a9 9 0 1 0 3-6.7" />
+										<path d="M3 4v5h5" />
+									</svg>
+
+									{isRestarting ? 'Starting...' : 'New Game'}
+								</button>
+							)}
 						</div>
 					}
 
@@ -676,7 +731,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 							</div>
 
 							<div className={classes.panelSubtitle}>
-								Choose a piece to place
+								{isFinished ? 'Board review' : 'Choose a piece to place'}
 							</div>
 						</div>
 
@@ -755,6 +810,64 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 					)}
 				</div>
 			</div>
+
+			{isFinished && !isWinnerModalClosed && (
+				<div className={classes.modalBackdrop}>
+					<div className={classes.winnerModal}>
+						<button
+							className={classes.modalCloseButton}
+							onClick={() => setIsWinnerModalClosed(true)}
+							aria-label="Close winner summary"
+						>
+							<svg aria-hidden="true" viewBox="0 0 24 24">
+								<path d="M18 6 6 18" />
+								<path d="m6 6 12 12" />
+							</svg>
+						</button>
+
+						<div
+							className={classes.winnerBadge}
+							style={{ '--winner-color': winner?.color || '#f3b51b' }}
+						>
+							<svg aria-hidden="true" viewBox="0 0 24 24">
+								<path d="M6 9 8 20h8l2-11-4 3-2-6-2 6-4-3Z" />
+								<path d="M8 20h8" />
+							</svg>
+						</div>
+
+						<div className={classes.winnerTitle}>
+							{winner?.name || 'A player'} won!
+						</div>
+
+						<div className={classes.winnerSubtitle}>
+							Final leaderboard
+						</div>
+
+						<div className={classes.leaderboardList}>
+							{leaderboard.map((entry, index) => (
+								<div
+									key={entry.playerId}
+									className={classes.leaderboardRow}
+									style={{ '--leader-color': entry.color }}
+								>
+									<div className={classes.leaderboardRank}>
+										{index + 1}
+									</div>
+
+									<div className={classes.leaderboardName}>
+										<span />
+										{entry.name}
+									</div>
+
+									<div className={classes.leaderboardBlocks}>
+										{entry.blocksPlaced} blocks
+									</div>
+								</div>
+							))}
+						</div>
+					</div>
+				</div>
+			)}
 		</div>
 	)
 }

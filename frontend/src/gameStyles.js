@@ -700,6 +700,37 @@ const gameStyles = () => ({
 		WebkitBackdropFilter: 'blur(12px)',
 	},
 
+	finishedBanner: {
+		width: 330,
+		justifyContent: 'space-between',
+	},
+
+	restartButton: {
+		display: 'inline-flex',
+		alignItems: 'center',
+		justifyContent: 'center',
+		gap: 7,
+		flex: '0 0 auto',
+		minHeight: 34,
+		padding: '8px 11px',
+		borderRadius: 7,
+		borderColor: 'rgba(37, 181, 100, 0.2)',
+		background: 'rgba(255, 255, 255, 0.92)',
+		color: '#20824b',
+		fontSize: 12,
+		fontWeight: 850,
+
+		'& svg': {
+			width: 16,
+			height: 16,
+			fill: 'none',
+			stroke: 'currentColor',
+			strokeWidth: 1.9,
+			strokeLinecap: 'round',
+			strokeLinejoin: 'round',
+		},
+	},
+
 	turnAvatar: {
 		flex: '0 0 auto',
 		width: 38,
@@ -768,6 +799,160 @@ const gameStyles = () => ({
 		transform: 'none',
 		marginTop: 14,
 		color: '#9d1f1f',
+	},
+
+	modalBackdrop: {
+		position: 'fixed',
+		inset: 0,
+		zIndex: 20,
+		display: 'flex',
+		alignItems: 'center',
+		justifyContent: 'center',
+		padding: 24,
+		boxSizing: 'border-box',
+		background: 'rgba(17, 48, 70, 0.28)',
+		backdropFilter: 'blur(4px)',
+		WebkitBackdropFilter: 'blur(4px)',
+	},
+
+	winnerModal: {
+		position: 'relative',
+		width: 420,
+		maxWidth: 'calc(100vw - 48px)',
+		boxSizing: 'border-box',
+		padding: '30px 28px 26px',
+		border: '1px solid rgba(255, 255, 255, 0.92)',
+		borderRadius: 10,
+		background: 'rgba(250, 254, 255, 0.94)',
+		boxShadow: '0 22px 55px rgba(20, 63, 93, 0.28)',
+		color: '#123f61',
+		textAlign: 'center',
+	},
+
+	modalCloseButton: {
+		position: 'absolute',
+		top: 13,
+		right: 13,
+		width: 34,
+		height: 34,
+		padding: 0,
+		display: 'flex',
+		alignItems: 'center',
+		justifyContent: 'center',
+		borderRadius: 7,
+		background: 'rgba(255, 255, 255, 0.78)',
+		color: '#42647d',
+
+		'& svg': {
+			width: 18,
+			height: 18,
+			fill: 'none',
+			stroke: 'currentColor',
+			strokeWidth: 2,
+			strokeLinecap: 'round',
+			strokeLinejoin: 'round',
+		},
+	},
+
+	winnerBadge: {
+		width: 64,
+		height: 64,
+		margin: '0 auto 15px',
+		borderRadius: '50%',
+		display: 'flex',
+		alignItems: 'center',
+		justifyContent: 'center',
+		background: 'var(--winner-color)',
+		boxShadow: `
+			inset 0 2px 4px rgba(255, 255, 255, 0.45),
+			inset 0 -5px 9px rgba(0, 0, 0, 0.14),
+			0 9px 18px rgba(35, 72, 100, 0.2)
+		`,
+
+		'& svg': {
+			width: 34,
+			height: 34,
+			fill: 'rgba(255, 255, 255, 0.68)',
+			stroke: '#123f61',
+			strokeWidth: 1.7,
+			strokeLinecap: 'round',
+			strokeLinejoin: 'round',
+		},
+	},
+
+	winnerTitle: {
+		color: '#123f61',
+		fontSize: 30,
+		fontWeight: 900,
+		lineHeight: 1.05,
+	},
+
+	winnerSubtitle: {
+		marginTop: 7,
+		color: '#52728a',
+		fontSize: 14,
+		fontWeight: 800,
+	},
+
+	leaderboardList: {
+		display: 'flex',
+		flexDirection: 'column',
+		gap: 8,
+		marginTop: 22,
+	},
+
+	leaderboardRow: {
+		display: 'grid',
+		gridTemplateColumns: '36px 1fr 96px',
+		alignItems: 'center',
+		gap: 12,
+		minHeight: 46,
+		padding: '8px 11px',
+		boxSizing: 'border-box',
+		border: '1px solid rgba(87, 131, 160, 0.12)',
+		borderRadius: 8,
+		background: 'rgba(255, 255, 255, 0.82)',
+		textAlign: 'left',
+	},
+
+	leaderboardRank: {
+		width: 28,
+		height: 28,
+		borderRadius: '50%',
+		display: 'flex',
+		alignItems: 'center',
+		justifyContent: 'center',
+		background: 'var(--leader-color)',
+		color: '#123f61',
+		fontSize: 14,
+		fontWeight: 900,
+		boxShadow: 'inset 0 1px 2px rgba(255, 255, 255, 0.5)',
+	},
+
+	leaderboardName: {
+		display: 'flex',
+		alignItems: 'center',
+		gap: 9,
+		minWidth: 0,
+		color: '#17496b',
+		fontSize: 16,
+		fontWeight: 850,
+
+		'& span': {
+			width: 12,
+			height: 12,
+			flex: '0 0 auto',
+			borderRadius: '50%',
+			background: 'var(--leader-color)',
+		},
+	},
+
+	leaderboardBlocks: {
+		color: '#315b78',
+		fontSize: 13,
+		fontWeight: 800,
+		textAlign: 'right',
+		whiteSpace: 'nowrap',
 	},
 
 	piecePanelHeader: {
