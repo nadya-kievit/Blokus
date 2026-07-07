@@ -1,5 +1,12 @@
-export const API_BASE = 'http://127.0.0.1:8000'
-export const WS_BASE = 'ws://127.0.0.1:8000'
+const removeTrailingSlash = (url) => url.replace(/\/+$/, '')
+
+export const API_BASE = removeTrailingSlash(
+  import.meta.env.VITE_API_BASE || 'http://127.0.0.1:8000'
+)
+
+export const WS_BASE = removeTrailingSlash(
+  import.meta.env.VITE_WS_BASE || 'ws://127.0.0.1:8000'
+)
 
 async function parseResponse(response) {
   const data = await response.json()
@@ -56,18 +63,21 @@ export async function restartGame(gameId, credentials) {
 }
 
 export async function validateMove(gameId, credentials, cells, pieceName) {
-  const response = await fetch(`${API_BASE}/games/${gameId}/validate-move`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      cells,
-      pieceName,
-      playerId: credentials.playerId,
-      playerToken: credentials.playerToken
-    })
-  })
+  const response = await fetch(
+    `${API_BASE}/games/${gameId}/validate-move`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        cells,
+        pieceName,
+        playerId: credentials.playerId,
+        playerToken: credentials.playerToken
+      })
+    }
+  )
 
   return parseResponse(response)
 }
