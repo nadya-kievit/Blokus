@@ -9,7 +9,6 @@ function Tile({
 	onClick,
 	onHover,
 	isHovered,
-	isHoverValid,
 	neighbors,
 	hoverNeighbors,
 	classes,
@@ -31,15 +30,9 @@ function Tile({
 	const shouldRemoveBottomBorder = (isOccupied && bottomOccupied) || (isHovered && hoverNeighbors?.bottom)
 	const shouldRemoveLeftBorder = (isOccupied && leftOccupied) || (isHovered && hoverNeighbors?.left)
 	const shouldRemoveRightBorder = (isOccupied && rightOccupied) || (isHovered && hoverNeighbors?.right)
-	const hoverBorderColor = isHoverValid
-		? 'rgba(14, 176, 65, 0.95)'
-		: 'rgba(224, 35, 39, 0.95)'
-	const hoverGlowColor = isHoverValid
-		? 'rgba(31, 224, 94, 0.42)'
-		: 'rgba(255, 59, 67, 0.42)'
-	const hoverInsetGlowColor = isHoverValid
-		? 'rgba(72, 255, 135, 0.18)'
-		: 'rgba(255, 94, 102, 0.18)'
+	const hoverBorderColor = 'rgba(14, 176, 65, 0.95)'
+	const hoverGlowColor = 'rgba(31, 224, 94, 0.42)'
+	const hoverInsetGlowColor = 'rgba(72, 255, 135, 0.18)'
 	const mergedBorderColor = isHovered
 		? 'rgba(84, 99, 108, 0.32)'
 		: 'rgba(35, 70, 95, 0.5)'
@@ -62,7 +55,14 @@ function Tile({
 		<div
 			className={clsx(classes.tile, (isOccupied || isHovered) && classes.glassPieceTile)}
 			onClick={handleClick}
-			onMouseEnter={() => onHover(row, col, viewRow, viewCol)}
+			onPointerEnter={event => onHover(
+				row,
+				col,
+				viewRow,
+				viewCol,
+				event.nativeEvent.offsetX / event.currentTarget.clientWidth,
+				event.nativeEvent.offsetY / event.currentTarget.clientHeight
+			)}
 			style={{
 				background:
 					isHovered

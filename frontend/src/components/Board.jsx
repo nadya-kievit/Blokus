@@ -13,16 +13,7 @@ function viewToBoard(row, col, rotation, size) {
 	}
 }
 
-function Board({
-	board,
-	boardRotation = 0,
-	onTileClick,
-	onTileHover,
-	onBoardLeave,
-	hoverCells,
-	isHoverValid,
-	classes,
-}) {
+function Board({board, boardRotation = 0, onTileClick, onTileHover, onBoardLeave, hoverCells, classes}) {
 	const boardSize = board.length
 	const displayedCells = board.map((row, viewRow) =>
 		row.map((_, viewCol) => {
@@ -45,7 +36,7 @@ function Board({
 	}
 
 	return (
-		<div className={classes.board} onMouseLeave={onBoardLeave}>
+		<div className={classes.board} data-game-board onMouseLeave={onBoardLeave}>
 
 			{displayedCells.map((row, viewRow) =>
 				row.map((cell, viewCol) => (
@@ -59,7 +50,6 @@ function Board({
 						viewCol={viewCol}
 						onClick={onTileClick}
 						isHovered={isHoveredAt(cell.row, cell.col)}
-						isHoverValid={isHoverValid}
 						onHover={onTileHover}
 						neighbors={{
 							top: viewRow > 0 ? displayedCells[viewRow - 1][viewCol].value : null,

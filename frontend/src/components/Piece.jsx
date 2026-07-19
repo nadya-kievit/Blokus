@@ -1,5 +1,58 @@
 import clsx from 'clsx'
 
+export function CursorPiece({ piece, rotation, color, cursorRef, position, classes }) {
+    const size = 35
+    const activeColor = color || '#0077ee'
+    const rotatedCells = piece.cells.map(([row, col]) => {
+        switch (rotation) {
+            case 90: return [-col, row]
+            case 180: return [-row, -col]
+            case 270: return [col, -row]
+            default: return [row, col]
+        }
+    })
+    const minRow = Math.min(...rotatedCells.map(cell => cell[0]))
+    const minCol = Math.min(...rotatedCells.map(cell => cell[1]))
+    const width = (Math.max(...rotatedCells.map(cell => cell[1])) - minCol + 1) * size
+    const height = (Math.max(...rotatedCells.map(cell => cell[0])) - minRow + 1) * size
+
+    return (
+        <div
+            ref={cursorRef}
+            style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                width,
+                height,
+                zIndex: 1000,
+                pointerEvents: 'none',
+                willChange: 'transform',
+                transform: `translate3d(${position.x - width / 2}px, ${position.y - height / 2}px, 0)`,
+            }}
+        >
+            {rotatedCells.map((cell, index) => (
+                <div
+                    key={index}
+                    className={classes.pieceTile}
+                    style={{
+                        position: 'absolute',
+                        boxSizing: 'border-box',
+                        width: size,
+                        height: size,
+                        top: (cell[0] - minRow) * size,
+                        left: (cell[1] - minCol) * size,
+                        background: `linear-gradient(145deg, #ffffff 0%, ${activeColor} 55%, ${activeColor} 100%)`,
+                        border: '1px solid rgba(0, 45, 120, 0.75)',
+                        borderRadius: 2,
+                        boxShadow: 'inset 2px 2px 4px rgba(255,255,255,0.55), inset -2px -2px 4px rgba(0,40,120,0.4), 0 2px 4px rgba(0,0,0,0.22)',
+                    }}
+                />
+            ))}
+        </div>
+    )
+}
+
 function Piece({ piece, placed, isSelected, onClick, rotation, color, classes }) {
 
     const size = 13

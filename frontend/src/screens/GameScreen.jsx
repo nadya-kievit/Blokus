@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { makeStyles } from 'tss-react/mui'
 import clsx from 'clsx'
 import {
@@ -10,7 +11,7 @@ import {
 } from '../services/api'
 import gameStyles from '../gameStyles'
 import Board from '../components/Board'
-import Piece from '../components/Piece'
+import Piece, { CursorPiece } from '../components/Piece'
 
 const useStyles = makeStyles()(gameStyles)
 
@@ -88,6 +89,11 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 	const storageKey = `blokus-player-${gameId}`
 	const socketRef = useRef(null)
 	const lastHoverTargetRef = useRef(null)
+	const cursorPieceRef = useRef(null)
+	const cursorPositionRef = useRef({ x: 0, y: 0 })
+	const cursorFrameRef = useRef(null)
+	const validationSequenceRef = useRef(0)
+	const hoverTimerRef = useRef(null)
 
 	const [credentials] = useState(() => {
 		const stored = localStorage.getItem(storageKey)
@@ -97,8 +103,8 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 	const [game, setGame] = useState(null)
 	const [pieceRotations, setPieceRotations] = useState({})
 	const [selectedPieceName, setSelectedPieceName] = useState(null)
+	const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 })
 	const [hoverCells, setHoverCells] = useState([])
-	const [isHoverValid, setIsHoverValid] = useState(false)
 	const [connectionStatus, setConnectionStatus] = useState('joining')
 	const [lastMessage, setLastMessage] = useState('')
 	const [isQuitting, setIsQuitting] = useState(false)
@@ -268,6 +274,56 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 		}
 	}, [selectedPieceName])
 
+	useEffect(() => {
+		if (!selectedPiece) return
+
+		const handlePointerMove = event => {
+			cursorPositionRef.current = { x: event.clientX, y: event.clientY }
+
+			if (cursorFrameRef.current) return
+
+			cursorFrameRef.current = requestAnimationFrame(() => {
+				cursorFrameRef.current = null
+				const element = cursorPieceRef.current
+
+				if (!element) return
+
+				const { width, height } = element.getBoundingClientRect()
+				element.style.transform = `translate3d(${cursorPositionRef.current.x - width / 2}px, ${cursorPositionRef.current.y - height / 2}px, 0)`
+			})
+		}
+
+		window.addEventListener('pointermove', handlePointerMove, { passive: true })
+
+		return () => {
+			window.removeEventListener('pointermove', handlePointerMove)
+			cancelAnimationFrame(cursorFrameRef.current)
+			cursorFrameRef.current = null
+		}
+	}, [selectedPiece])
+
+	useEffect(() => () => clearTimeout(hoverTimerRef.current), [])
+
+	useEffect(() => {
+		if (!selectedPiece) return
+
+		const handleOutsidePointerDown = event => {
+			if (event.target.closest('[data-game-board]')) return
+
+			validationSequenceRef.current += 1
+			clearTimeout(hoverTimerRef.current)
+			lastHoverTargetRef.current = null
+			setHoverCells([])
+			setSelectedPieceName(null)
+		}
+
+		document.addEventListener('pointerdown', handleOutsidePointerDown, true)
+
+		return () => {
+			document.removeEventListener('pointerdown', handleOutsidePointerDown, true)
+		}
+	}, [selectedPiece])
+
 	const handleCopyInvite = async () => {
 		await navigator.clipboard.writeText(gameId)
 		setLastMessage('Invite code copied.')
@@ -316,10 +372,12 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 	}
 
 	const handleTileClick = () => {
-		if (!canMove || !selectedPiece || !isHoverValid || hoverCells.length === 0) {
+		if (!canMove || !selectedPiece || hoverCells.length === 0) {
 			return
 		}
 
+		validationSequenceRef.current += 1
+		clearTimeout(hoverTimerRef.current)
 		socketRef.current?.send(JSON.stringify({
 			type: 'place_piece',
 			pieceName: selectedPiece.name,
@@ -331,26 +389,36 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 	}
 
 	const handleBoardLeave = useCallback(() => {
+		validationSequenceRef.current += 1
+		clearTimeout(hoverTimerRef.current)
 		lastHoverTargetRef.current = null
 		setHoverCells([])
 	}, [])
 
-	const handleTileHover = useCallback(async (row, col, viewRow, viewCol) => {
-		lastHoverTargetRef.current = { row, col, viewRow, viewCol }
+	const handleTileHover = useCallback((row, col, viewRow, viewCol, offsetX = 0.5, offsetY = 0.5) => {
+		const validationSequence = ++validationSequenceRef.current
+		clearTimeout(hoverTimerRef.current)
+		lastHoverTargetRef.current = { row, col, viewRow, viewCol, offsetX, offsetY }
 
 		if (!canMove || !selectedPiece || !credentials) {
 			setHoverCells([])
 			return
 		}
 
+		setHoverCells([])
+
 		const rotatedCells = rotationForCells(selectedPiece.cells, selectedPiece.rotation)
 		const minRow = Math.min(...rotatedCells.map(cell => cell[0]))
 		const minCol = Math.min(...rotatedCells.map(cell => cell[1]))
+		const pieceRows = Math.max(...rotatedCells.map(cell => cell[0])) - minRow + 1
+		const pieceCols = Math.max(...rotatedCells.map(cell => cell[1])) - minCol + 1
+		const anchorViewRow = Math.round(viewRow + offsetY - pieceRows / 2)
+		const anchorViewCol = Math.round(viewCol + offsetX - pieceCols / 2)
 		const newHoverCells = []
 
 		for (const cell of rotatedCells) {
-			const newViewRow = viewRow + (cell[0] - minRow)
-			const newViewCol = viewCol + (cell[1] - minCol)
+			const newViewRow = anchorViewRow + (cell[0] - minRow)
+			const newViewCol = anchorViewCol + (cell[1] - minCol)
 
 			if (
 				newViewRow < 0 ||
@@ -380,20 +448,25 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 			})
 		}
 
-		try {
-			const result = await validateMove(
-				gameId,
-				credentials,
-				newHoverCells,
-				selectedPiece.name
-			)
+		hoverTimerRef.current = setTimeout(async () => {
+			try {
+				const result = await validateMove(
+					gameId,
+					credentials,
+					newHoverCells,
+					selectedPiece.name
+				)
 
-			setIsHoverValid(result.valid)
-			setHoverCells(newHoverCells)
-		} catch (err) {
-			setIsHoverValid(false)
-			setLastMessage(err.message)
-		}
+				if (validationSequence !== validationSequenceRef.current) return
+
+				setHoverCells(result.valid ? newHoverCells : [])
+			} catch (err) {
+				if (validationSequence !== validationSequenceRef.current) return
+
+				setHoverCells([])
+				setLastMessage(err.message)
+			}
+		}, 55)
 	}, [board, boardRotation, canMove, credentials, gameId, selectedPiece])
 
 	useEffect(() => {
@@ -405,7 +478,9 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 			hoverTarget.row,
 			hoverTarget.col,
 			hoverTarget.viewRow,
-			hoverTarget.viewCol
+			hoverTarget.viewCol,
+			hoverTarget.offsetX,
+			hoverTarget.offsetY
 		)
 	}, [handleTileHover, selectedPiece])
 
@@ -432,6 +507,18 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 	}
 
 	return (
+		<>
+		{selectedPiece && createPortal(
+			<CursorPiece
+				piece={selectedPiece}
+				rotation={selectedPiece.rotation}
+				color={me?.color}
+				classes={classes}
+				cursorRef={cursorPieceRef}
+				position={cursorPosition}
+			/>,
+			document.body
+		)}
 		<div className={classes.gamePage}>
 			<header className={classes.gameHeader}>
 				<div className={classes.gameBrand}>
@@ -638,7 +725,6 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 							onTileHover={handleTileHover}
 							onBoardLeave={handleBoardLeave}
 							hoverCells={hoverCells}
-							isHoverValid={isHoverValid}
 						/>
 
 						{isWaitingForPlayers && (
@@ -755,8 +841,13 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 								placed={piece.placed}
 								color={me?.color}
 								isSelected={selectedPieceName === piece.name}
-								onClick={() => {
+								onClick={event => {
 									if (!piece.placed && canMove) {
+										cursorPositionRef.current = {
+											x: event.clientX,
+											y: event.clientY,
+										}
+										setCursorPosition(cursorPositionRef.current)
 										setSelectedPieceName(piece.name)
 									}
 								}}
@@ -869,6 +960,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 				</div>
 			)}
 		</div>
+		</>
 	)
 }
 
