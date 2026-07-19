@@ -833,7 +833,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 					</div>
 
 					<div className={classes.pieceCardGrid}>
-						{pieces.map(piece => (
+						{pieces.filter(piece => !piece.placed).map(piece => (
 							<Piece
 								classes={classes}
 								key={piece.name}
