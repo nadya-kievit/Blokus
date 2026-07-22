@@ -241,11 +241,17 @@ def piece_orientations(piece):
     orientations = []
     seen = set()
 
-    for rotation in [0, 90, 180, 270]:
-        normalized = normalize_cells(rotate_cells(piece["cells"], rotation))
-        if normalized not in seen:
-            seen.add(normalized)
-            orientations.append(normalized)
+    for flipped in [False, True]:
+        cells = [
+            (row, -col if flipped else col)
+            for row, col in piece["cells"]
+        ]
+
+        for rotation in [0, 90, 180, 270]:
+            normalized = normalize_cells(rotate_cells(cells, rotation))
+            if normalized not in seen:
+                seen.add(normalized)
+                orientations.append(normalized)
 
     return orientations
 

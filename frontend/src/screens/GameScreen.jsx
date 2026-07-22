@@ -29,17 +29,19 @@ const EMPTY_BOARD = Array(BOARD_SIZE).fill(null).map(() =>
 )
 
 
-function rotationForCells(cells, rotation) {
+function rotationForCells(cells, rotation, flipped = false) {
 	return cells.map(([row, col]) => {
+		const transformedCol = flipped ? -col : col
+
 		switch (rotation) {
 			case 90:
-				return [-col, row]
+				return [-transformedCol, row]
 			case 180:
-				return [-row, -col]
+				return [-row, -transformedCol]
 			case 270:
-				return [col, -row]
+				return [transformedCol, -row]
 			default:
-				return [row, col]
+				return [row, transformedCol]
 		}
 	})
 }
@@ -143,6 +145,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 
 	const [game, setGame] = useState(null)
 	const [pieceRotations, setPieceRotations] = useState({})
+	const [pieceFlips, setPieceFlips] = useState({})
 	const [selectedPieceName, setSelectedPieceName] = useState(null)
 	const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 })
 	const [hoverCells, setHoverCells] = useState([])
@@ -166,8 +169,9 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 		(me?.pieces || []).map(piece => ({
 			...piece,
 			rotation: pieceRotations[piece.name] || 0,
+			flipped: pieceFlips[piece.name] || false,
 		})),
-		[me, pieceRotations]
+		[me, pieceFlips, pieceRotations]
 	)
 
 	const selectedPiece = useMemo(() => 
@@ -301,7 +305,17 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 		const handleKeyDown = event => {
 			if (!selectedPieceName) return
 
-			if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return
+			if (!['ArrowRight', 'ArrowLeft', 'ArrowUp', 'ArrowDown'].includes(event.key)) return
+
+			event.preventDefault()
+
+			if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+				setPieceFlips(prev => ({
+					...prev,
+					[selectedPieceName]: !prev[selectedPieceName],
+				}))
+				return
+			}
 
 			setPieceRotations(prev => {
 				const rotationChange = event.key === 'ArrowRight' ? 90 : -90
@@ -460,7 +474,11 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 			return
 		}
 
-		const rotatedCells = rotationForCells(selectedPiece.cells, selectedPiece.rotation)
+		const rotatedCells = rotationForCells(
+			selectedPiece.cells,
+			selectedPiece.rotation,
+			selectedPiece.flipped
+		)
 		const minRow = Math.min(...rotatedCells.map(cell => cell[0]))
 		const minCol = Math.min(...rotatedCells.map(cell => cell[1]))
 		const pieceRows = Math.max(...rotatedCells.map(cell => cell[0])) - minRow + 1
@@ -541,6 +559,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 			<CursorPiece
 				piece={selectedPiece}
 				rotation={selectedPiece.rotation}
+				flipped={selectedPiece.flipped}
 				color={me?.color}
 				classes={classes}
 				cursorRef={cursorPieceRef}
@@ -888,6 +907,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 									setSelectedPieceName(piece.name)
 								}}
 								rotation={piece.rotation}
+								flipped={piece.flipped}
 							/>
 						))}
 					</div>

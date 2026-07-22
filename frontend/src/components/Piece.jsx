@@ -13,17 +13,19 @@ function bordersForCell(cell, cellKeys, innerBorder, outerBorder) {
     }
 }
 
-export function CursorPiece({ piece, rotation, color, cursorRef, position, classes }) {
+export function CursorPiece({ piece, rotation, flipped, color, cursorRef, position, classes }) {
     const size = 35
     const activeColor = color || '#0077ee'
     const innerBorder = '1px solid rgba(0, 45, 120, 0.75)'
     const outerBorder = '1px solid rgba(0, 45, 120, 0.75)'
     const rotatedCells = piece.cells.map(([row, col]) => {
+        const transformedCol = flipped ? -col : col
+
         switch (rotation) {
-            case 90: return [-col, row]
-            case 180: return [-row, -col]
-            case 270: return [col, -row]
-            default: return [row, col]
+            case 90: return [-transformedCol, row]
+            case 180: return [-row, -transformedCol]
+            case 270: return [transformedCol, -row]
+            default: return [row, transformedCol]
         }
     })
     const cellKeys = new Set(rotatedCells.map(([row, col]) => `${row},${col}`))
@@ -69,7 +71,7 @@ export function CursorPiece({ piece, rotation, color, cursorRef, position, class
     )
 }
 
-function Piece({ piece, placed, isSelected, onClick, rotation, color, classes }) {
+function Piece({ piece, placed, isSelected, onClick, rotation, flipped, color, classes }) {
 
     const size = 13
     const cardSize = 72
@@ -78,20 +80,21 @@ function Piece({ piece, placed, isSelected, onClick, rotation, color, classes })
     const outerBorder = '1px solid rgba(0, 45, 120, 0.75)'
 
     const rotatedCells = piece.cells.map(([row, col]) => {
+        const transformedCol = flipped ? -col : col
 
         switch (rotation) {
 
             case 90:
-                return [-col, row]
+                return [-transformedCol, row]
 
             case 180:
-                return [-row, -col]
+                return [-row, -transformedCol]
 
             case 270:
-                return [col, -row]
+                return [transformedCol, -row]
 
             default:
-                return [row, col]
+                return [row, transformedCol]
         }
     })
     const cellKeys = new Set(rotatedCells.map(([row, col]) => `${row},${col}`))
@@ -118,6 +121,7 @@ function Piece({ piece, placed, isSelected, onClick, rotation, color, classes })
                     key={index}
                     style={{
                         position: 'absolute',
+                        boxSizing: 'border-box',
                         width: `${size}px`,
                         height: `${size}px`,
 
