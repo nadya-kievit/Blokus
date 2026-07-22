@@ -8,6 +8,10 @@ export const WS_BASE = removeTrailingSlash(
   import.meta.env.VITE_WS_BASE || 'ws://127.0.0.1:8000'
 )
 
+export async function wakeGameServer() {
+  await fetch(`${API_BASE}/health`)
+}
+
 async function parseResponse(response) {
   const data = await response.json()
 
