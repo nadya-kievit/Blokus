@@ -13,15 +13,26 @@ function viewToBoard(row, col, rotation, size) {
 	}
 }
 
-function Board({board, boardRotation = 0, onTileClick, onTileHover, onBoardLeave, hoverCells, classes}) {
+function Board({board, boardRotation = 0, onTileClick, onTileHover, onBoardLeave, hoverCells, pendingPlacement, classes}) {
 	const boardSize = board.length
+	const pendingCells = new Set(
+		(pendingPlacement?.cells || []).map(cell => `${cell.row},${cell.col}`)
+	)
 	const displayedCells = board.map((row, viewRow) =>
 		row.map((_, viewCol) => {
 			const boardPosition = viewToBoard(viewRow, viewCol, boardRotation, boardSize)
+			const isPending = pendingCells.has(`${boardPosition.row},${boardPosition.col}`)
 
 			return {
 				...boardPosition,
-				value: board[boardPosition.row][boardPosition.col],
+				value: isPending
+					? {
+						occupied: true,
+						player: pendingPlacement.playerId,
+						pieceId: pendingPlacement.pieceId,
+						color: pendingPlacement.color,
+					}
+					: board[boardPosition.row][boardPosition.col],
 			}
 		})
 	)

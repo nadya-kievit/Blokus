@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useLayoutEffect } from 'react'
 import { createPortal } from 'react-dom'
+import { AnimatePresence, motion } from 'motion/react'
 import { makeStyles } from 'tss-react/mui'
 import clsx from 'clsx'
 import { gameSocketUrl, getGame, quitGame, restartGame } from '../services/api'
@@ -149,6 +150,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 	const [selectedPieceName, setSelectedPieceName] = useState(null)
 	const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 })
 	const [hoverCells, setHoverCells] = useState([])
+	const [pendingPlacement, setPendingPlacement] = useState(null)
 	const [connectionStatus, setConnectionStatus] = useState('joining')
 	const [lastMessage, setLastMessage] = useState('')
 	const [isQuitting, setIsQuitting] = useState(false)
@@ -178,6 +180,10 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 		pieces.find(piece => piece.name === selectedPieceName && !piece.placed) || null,
 		[pieces, selectedPieceName]
 	)
+	const availablePieces = pieces.filter(piece =>
+		!piece.placed && piece.name !== pendingPlacement?.pieceName
+	)
+	const remainingPieceCount = availablePieces.length
 
 	const canMove = game?.status === 'playing' && game.currentPlayerId === credentials?.playerId
 	const board = game?.board || EMPTY_BOARD
@@ -280,6 +286,15 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 
 			if (message.type === 'game_state') {
 				setGame(message.game)
+				setPendingPlacement(pending => {
+					if (!pending) return null
+
+					const isConfirmed = pending.cells.every(cell =>
+						message.game.board[cell.row][cell.col].pieceId === pending.pieceId
+					)
+
+					return isConfirmed ? null : pending
+				})
 
 				if (message.game.notice) {
 					setLastMessage(message.game.notice)
@@ -287,11 +302,13 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 			}
 
 			if (message.type === 'error') {
+				setPendingPlacement(null)
 				setLastMessage(message.reason)
 			}
 		}
 
 		socket.onclose = () => {
+			setPendingPlacement(null)
 			setConnectionStatus('disconnected')
 		}
 
@@ -436,6 +453,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 		try {
 			const restartedGame = await restartGame(gameId, credentials)
 			setGame(restartedGame)
+			setPendingPlacement(null)
 			setSelectedPieceName(null)
 			setHoverCells([])
 			setLastMessage(restartedGame.notice || '')
@@ -447,9 +465,17 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 	}
 
 	const handleTileClick = () => {
-		if (!canMove || !selectedPiece || hoverCells.length === 0) {
+		if (!canMove || !selectedPiece || hoverCells.length === 0 || pendingPlacement) {
 			return
 		}
+
+		setPendingPlacement({
+			cells: hoverCells,
+			color: me.color,
+			pieceId: `${me.id}-${selectedPiece.name}`,
+			pieceName: selectedPiece.name,
+			playerId: me.id,
+		})
 
 		socketRef.current?.send(JSON.stringify({
 			type: 'place_piece',
@@ -721,11 +747,18 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 				</aside>
 
 				<div className={classes.boardCenter}>
-					{(game?.status === 'playing' || isFinished) &&
-						<div
-							className={clsx(classes.turnBanner, isFinished && classes.finishedBanner)}
-							style={{ '--turn-color': isFinished ? winner?.color || '#f3b51b' : currentPlayer?.color || '#f3b51b' }}
-						>
+					<div className={classes.turnBannerSlot}>
+						<AnimatePresence mode="wait" initial={false}>
+							{(game?.status === 'playing' || isFinished) && (
+								<motion.div
+									key={isFinished ? `finished-${game?.winnerId}` : game?.currentPlayerId}
+									className={clsx(classes.turnBanner, isFinished && classes.finishedBanner)}
+									style={{ '--turn-color': isFinished ? winner?.color || '#f3b51b' : currentPlayer?.color || '#f3b51b' }}
+									initial={{ opacity: 0, y: -4 }}
+									animate={{ opacity: 1, y: 0 }}
+									exit={{ opacity: 0, y: 4 }}
+									transition={{ duration: 0.18, ease: 'easeOut' }}
+								>
 							<div className={classes.turnAvatar} aria-hidden="true">
 								<svg viewBox="0 0 24 24">
 									<circle cx="12" cy="8" r="4" />
@@ -761,8 +794,10 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 									{isRestarting ? 'Starting...' : 'New Game'}
 								</button>
 							)}
-						</div>
-					}
+								</motion.div>
+							)}
+						</AnimatePresence>
+					</div>
 
 					<div className={classes.boardFrame}>
 						<Board
@@ -773,6 +808,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 							onTileHover={handleTileHover}
 							onBoardLeave={handleBoardLeave}
 							hoverCells={hoverCells}
+							pendingPlacement={pendingPlacement}
 						/>
 
 						{isWaitingForPlayers && (
@@ -881,10 +917,19 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 					</div>
 
 					<div data-game-piece className={classes.pieceCardGrid}>
-						{pieces.filter(piece => !piece.placed).map(piece => (
+						<AnimatePresence mode="popLayout" initial={false}>
+						{availablePieces.map(piece => (
+							<motion.div
+								key={piece.name}
+								layout
+								className={classes.pieceGridItem}
+								initial={{ opacity: 0, scale: 0.9 }}
+								animate={{ opacity: 1, scale: 1 }}
+								exit={{ opacity: 0, scale: 0.82 }}
+								transition={{ duration: 0.22, ease: 'easeOut' }}
+							>
 							<Piece
 								classes={classes}
-								key={piece.name}
 								piece={piece}
 								placed={piece.placed}
 								color={me?.color}
@@ -909,27 +954,22 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 								rotation={piece.rotation}
 								flipped={piece.flipped}
 							/>
+							</motion.div>
 						))}
+						</AnimatePresence>
 					</div>
 
 					<div className={classes.piecesRemaining}>
 						<div>
 							Pieces remaining:{' '}
-							<strong>{pieces.filter(piece => !piece.placed).length}</strong>
+							<strong>{remainingPieceCount}</strong>
 						</div>
 
 						<div className={classes.remainingDots} aria-hidden="true">
-							{Array.from({ length: (pieces.length - (pieces.filter(piece => piece.placed).length)) }).map((_, index) => (
+							{Array.from({ length: pieces.length }).map((_, index) => (
 								<span
-									key={`not-placed-${index}`}
-									className={classes.unused}
-									style={{ '--piece-color': me?.color }}
-								/>
-							))}
-							{Array.from({ length: (pieces.filter(piece => piece.placed).length) }).map((_, index) => (
-								<span
-									key={`placed-${index}`}
-									className={classes.used}
+									key={index}
+									className={index < remainingPieceCount ? classes.unused : classes.used}
 									style={{ '--piece-color': me?.color }}
 								/>
 							))}

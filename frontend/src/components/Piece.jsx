@@ -76,7 +76,7 @@ function Piece({ piece, placed, isSelected, onClick, rotation, flipped, color, c
     const size = 13
     const cardSize = 72
     const activeColor = color || '#0077ee'
-    const innerBorder = '0.5px solid rgba(0, 45, 120, 0.75)'
+    const innerBorder = '1px solid rgba(0, 45, 120, 0.75)'
     const outerBorder = '1px solid rgba(0, 45, 120, 0.75)'
 
     const rotatedCells = piece.cells.map(([row, col]) => {

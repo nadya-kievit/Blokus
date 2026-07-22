@@ -16,7 +16,7 @@ function Tile({value, row, col, viewRow, viewCol, onClick, onHover, isHovered, n
 	const shouldRemoveBottomBorder = belongsToSamePiece(neighbors.bottom) || (isHovered && hoverNeighbors?.bottom)
 	const shouldRemoveLeftBorder = belongsToSamePiece(neighbors.left) || (isHovered && hoverNeighbors?.left)
 	const shouldRemoveRightBorder = belongsToSamePiece(neighbors.right) || (isHovered && hoverNeighbors?.right)
-	const mergedBorderColor = isHovered ? 'rgba(156, 168, 177, 0.72)' : occupiedColor
+	const mergedBorderColor = isHovered ? 'rgba(156, 168, 177, 0.72)' : null
 	const defaultBorderColor = 'rgba(35, 70, 95, 0.75)'
 	const outerBorderWidth = 1
 	const innerBorderWidth = isHovered ? 0 : 1

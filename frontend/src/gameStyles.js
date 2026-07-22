@@ -81,6 +81,14 @@ const gameStyles = () => ({
 		gap: 12,
 	},
 
+	turnBannerSlot: {
+		height: 78,
+		flex: '0 0 78px',
+		display: 'flex',
+		alignItems: 'center',
+		justifyContent: 'center',
+	},
+
 	piecesRight: {
 		position: 'absolute',
 		right: 32,
@@ -325,6 +333,7 @@ const gameStyles = () => ({
 		'& span': {
 			height: 11,
 			borderRadius: 2,
+			transition: 'background-color 220ms ease',
 		},
 	},
 
@@ -1026,9 +1035,14 @@ const gameStyles = () => ({
 
 	pieceCardGrid: {
 		display: 'grid',
-		gridTemplateColumns: 'repeat(4, 72px)',
+		gridTemplateColumns: 'repeat(4, 86px)',
 		gap: 8,
 		justifyContent: 'space-between',
+	},
+
+	pieceGridItem: {
+		width: 86,
+		height: 86,
 	},
 
 	pieceCard: {
@@ -1078,6 +1092,7 @@ const gameStyles = () => ({
 			borderRadius: '50%',
 			background: 'var(--piece-color, #0077ee)',
 			boxShadow: 'inset 0 -1px 1px rgba(0, 0, 0, 0.12)',
+			transition: 'background-color 220ms ease, box-shadow 220ms ease',
 		},
 	},
 
