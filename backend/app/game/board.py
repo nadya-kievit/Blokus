@@ -8,14 +8,15 @@ class Board:
             [
                 {
                     "occupied": False,
-                    "player": None
+                    "player": None,
+                    "pieceId": None,
                 }
                 for _ in range(size)
             ]
             for _ in range(size)
         ]
 
-    def place_piece(self, cells, player=1, color=None):
+    def place_piece(self, cells, player=1, color=None, piece_id=None):
 
         for cell in cells:
 
@@ -25,6 +26,7 @@ class Board:
             self.grid[row][col]["occupied"] = True
             self.grid[row][col]["player"] = player
             self.grid[row][col]["color"] = color
+            self.grid[row][col]["pieceId"] = piece_id
 
     def get_grid(self):
         return self.grid

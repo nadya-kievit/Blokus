@@ -9,24 +9,21 @@ function Tile({value, row, col, viewRow, viewCol, onClick, onHover, isHovered, n
 	const isOccupied = value.occupied
 	const occupiedColor = value.color || '#0077ee'
 
-	const topOccupied = neighbors.top?.occupied
-	const bottomOccupied = neighbors.bottom?.occupied
-	const leftOccupied = neighbors.left?.occupied
-	const rightOccupied = neighbors.right?.occupied
+	const belongsToSamePiece = neighbor =>
+		isOccupied && value.pieceId && neighbor?.pieceId === value.pieceId
 
-	const shouldRemoveTopBorder = (isOccupied && topOccupied) || (isHovered && hoverNeighbors?.top)
-	const shouldRemoveBottomBorder = (isOccupied && bottomOccupied) || (isHovered && hoverNeighbors?.bottom)
-	const shouldRemoveLeftBorder = (isOccupied && leftOccupied) || (isHovered && hoverNeighbors?.left)
-	const shouldRemoveRightBorder = (isOccupied && rightOccupied) || (isHovered && hoverNeighbors?.right)
-	const hoverInsetGlowColor = 'rgba(72, 255, 135, 0.18)'
-	const mergedBorderColor = isHovered ? 'rgba(156, 168, 177, 0.72)' : 'rgba(35, 70, 95, 0.5)'
+	const shouldRemoveTopBorder = belongsToSamePiece(neighbors.top) || (isHovered && hoverNeighbors?.top)
+	const shouldRemoveBottomBorder = belongsToSamePiece(neighbors.bottom) || (isHovered && hoverNeighbors?.bottom)
+	const shouldRemoveLeftBorder = belongsToSamePiece(neighbors.left) || (isHovered && hoverNeighbors?.left)
+	const shouldRemoveRightBorder = belongsToSamePiece(neighbors.right) || (isHovered && hoverNeighbors?.right)
+	const mergedBorderColor = isHovered ? 'rgba(156, 168, 177, 0.72)' : occupiedColor
 	const defaultBorderColor = 'rgba(35, 70, 95, 0.75)'
 	const outerBorderWidth = 1
 	const innerBorderWidth = isHovered ? 0 : 1
 
 	return (
 		<div
-			className={clsx(classes.tile, (isOccupied || isHovered) && classes.glassPieceTile)}
+			className={clsx(classes.tile, (isOccupied) && classes.glassPieceTile)}
 			onClick={handleClick}
 			onPointerEnter={event => onHover(
 				row,

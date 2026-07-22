@@ -1,8 +1,23 @@
 import clsx from 'clsx'
 
+function bordersForCell(cell, cellKeys, innerBorder, outerBorder) {
+    const [row, col] = cell
+    const hasCell = (rowOffset, colOffset) =>
+        cellKeys.has(`${row + rowOffset},${col + colOffset}`)
+
+    return {
+        borderTop: hasCell(-1, 0) ? innerBorder : outerBorder,
+        borderBottom: hasCell(1, 0) ? innerBorder : outerBorder,
+        borderLeft: hasCell(0, -1) ? innerBorder : outerBorder,
+        borderRight: hasCell(0, 1) ? innerBorder : outerBorder,
+    }
+}
+
 export function CursorPiece({ piece, rotation, color, cursorRef, position, classes }) {
     const size = 35
     const activeColor = color || '#0077ee'
+    const innerBorder = '1px solid rgba(0, 45, 120, 0.75)'
+    const outerBorder = '1px solid rgba(0, 45, 120, 0.75)'
     const rotatedCells = piece.cells.map(([row, col]) => {
         switch (rotation) {
             case 90: return [-col, row]
@@ -11,6 +26,7 @@ export function CursorPiece({ piece, rotation, color, cursorRef, position, class
             default: return [row, col]
         }
     })
+    const cellKeys = new Set(rotatedCells.map(([row, col]) => `${row},${col}`))
     const minRow = Math.min(...rotatedCells.map(cell => cell[0]))
     const minCol = Math.min(...rotatedCells.map(cell => cell[1]))
     const width = (Math.max(...rotatedCells.map(cell => cell[1])) - minCol + 1) * size
@@ -43,7 +59,7 @@ export function CursorPiece({ piece, rotation, color, cursorRef, position, class
                         top: (cell[0] - minRow) * size,
                         left: (cell[1] - minCol) * size,
                         background: `linear-gradient(145deg, #ffffff 0%, ${activeColor} 55%, ${activeColor} 100%)`,
-                        border: '1px solid rgba(0, 45, 120, 0.75)',
+                        ...bordersForCell(cell, cellKeys, innerBorder, outerBorder),
                         borderRadius: 2,
                         boxShadow: 'inset 2px 2px 4px rgba(255,255,255,0.55), inset -2px -2px 4px rgba(0,40,120,0.4), 0 2px 4px rgba(0,0,0,0.22)',
                     }}
@@ -58,6 +74,8 @@ function Piece({ piece, placed, isSelected, onClick, rotation, color, classes })
     const size = 13
     const cardSize = 72
     const activeColor = color || '#0077ee'
+    const innerBorder = '0.5px solid rgba(0, 45, 120, 0.75)'
+    const outerBorder = '1px solid rgba(0, 45, 120, 0.75)'
 
     const rotatedCells = piece.cells.map(([row, col]) => {
 
@@ -76,6 +94,7 @@ function Piece({ piece, placed, isSelected, onClick, rotation, color, classes })
                 return [row, col]
         }
     })
+    const cellKeys = new Set(rotatedCells.map(([row, col]) => `${row},${col}`))
 
     const minRow = Math.min(...rotatedCells.map(c => c[0]))
     const minCol = Math.min(...rotatedCells.map(c => c[1]))
@@ -87,10 +106,7 @@ function Piece({ piece, placed, isSelected, onClick, rotation, color, classes })
     const offsetLeft = (cardSize - pieceWidth) / 2
 
     return (
-        <div
-			className={clsx(classes.pieceCard, placed && classes.placed, isSelected && classes.selected)}
-            onClick={onClick}
-        >
+        <div className={clsx(classes.pieceCard, placed && classes.placed, isSelected && classes.selected)} onClick={onClick}>
 
         {rotatedCells.map((cell, index) => {
 
@@ -100,7 +116,6 @@ function Piece({ piece, placed, isSelected, onClick, rotation, color, classes })
             return (
                 <div
                     key={index}
-                    className={classes.pieceTile}
                     style={{
                         position: 'absolute',
                         width: `${size}px`,
@@ -113,15 +128,12 @@ function Piece({ piece, placed, isSelected, onClick, rotation, color, classes })
                             ? 'linear-gradient(145deg, #b8b8b8, #777)'
                             : isSelected
                                 ? `linear-gradient(145deg, #ffffff 0%, ${activeColor} 55%, ${activeColor} 100%)`
-                                : `linear-gradient(145deg, #ffffff 0%, ${activeColor} 55%, ${activeColor} 100%)`,
+                                : `${activeColor}`,
 
-                        boxShadow: placed
-                            ? 'inset 2px 2px 4px rgba(255,255,255,0.35), inset -2px -2px 4px rgba(0,0,0,0.25)'
-                            : 'inset 2px 2px 4px rgba(255,255,255,0.55), inset -2px -2px 4px rgba(0,40,120,0.4), 0 2px 4px rgba(0,0,0,0.22)',
-
+                        
                         opacity: placed ? 0.6 : 1,
                         cursor: placed ? 'default' : 'pointer',
-                        border: '1px solid rgba(0, 45, 120, 0.75)',
+                        ...bordersForCell(cell, cellKeys, innerBorder, outerBorder),
                         borderRadius: '1px',
                     }}
                 />

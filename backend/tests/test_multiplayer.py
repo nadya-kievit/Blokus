@@ -57,7 +57,9 @@ def test_creating_multiple_games_keeps_boards_isolated():
     second_state = client.get(f"/games/{second_game_id}").json()
 
     assert first_state["board"][0][0]["occupied"] is True
+    assert first_state["board"][0][0]["pieceId"] == "p1-I1"
     assert second_state["board"][0][0]["occupied"] is False
+    assert second_state["board"][0][0]["pieceId"] is None
 
 
 def test_four_players_fill_seats_and_fifth_join_is_rejected():

@@ -394,7 +394,7 @@ def remove_player_from_game(game, player):
         for cell in row:
             if cell.get("player") == player["id"]:
                 cell.clear()
-                cell.update({"occupied": False, "player": None})
+                cell.update({"occupied": False, "player": None, "pieceId": None})
 
     game["players"].remove(player)
     game["moveHistory"] = [
@@ -574,7 +574,12 @@ async def game_websocket(websocket: WebSocket, game_id: str, playerId: str, toke
                     })
                     continue
 
-                game["board"].place_piece(move.cells, player=player["id"], color=player["color"])
+                game["board"].place_piece(
+                    move.cells,
+                    player=player["id"],
+                    color=player["color"],
+                    piece_id=f'{player["id"]}-{move.pieceName}',
+                )
 
                 for piece in player["pieces"]:
                     if piece["name"] == move.pieceName:
