@@ -1,14 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, useLayoutEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { makeStyles } from 'tss-react/mui'
 import clsx from 'clsx'
-import {
-	gameSocketUrl,
-	getGame,
-	quitGame,
-	restartGame,
-	validateMove,
-} from '../services/api'
+import { gameSocketUrl, getGame, quitGame, restartGame } from '../services/api'
 import gameStyles from '../gameStyles'
 import Board from '../components/Board'
 import Piece, { CursorPiece } from '../components/Piece'
@@ -34,6 +28,7 @@ const EMPTY_BOARD = Array(BOARD_SIZE).fill(null).map(() =>
 	}))
 )
 
+
 function rotationForCells(cells, rotation) {
 	return cells.map(([row, col]) => {
 		switch (rotation) {
@@ -49,6 +44,7 @@ function rotationForCells(cells, rotation) {
 	})
 }
 
+
 function viewToBoard(row, col, rotation, size) {
 	switch (rotation) {
 		case 90:
@@ -62,6 +58,7 @@ function viewToBoard(row, col, rotation, size) {
 	}
 }
 
+
 function rotationForCorner(corner) {
 	if (!corner) return 0
 
@@ -72,16 +69,62 @@ function rotationForCorner(corner) {
 	return 0
 }
 
+
 function placedBlockCount(player) {
 	return (player?.pieces || []).reduce(
-		(total, piece) => total + (piece.placed ? piece.cells.length : 0),
-		0
+		(total, piece) => 
+			total + (piece.placed ? piece.cells.length : 0), 0
 	)
 }
+
 
 function totalBlockCount(player) {
 	return (player?.pieces || []).reduce((total, piece) => total + piece.cells.length, 0)
 }
+
+
+function isValidPlacement(board, cells, player, isFirstMove) {
+	if (cells.some(cell => board[cell.row][cell.col].occupied)) return false
+
+	if (isFirstMove) {
+		return cells.some(cell =>
+			cell.row === player.corner.row && cell.col === player.corner.col
+		)
+	}
+
+	let touchesOwnPieceDiagonally = false
+
+	for (const cell of cells) {
+		const sideNeighbors = [
+			[cell.row - 1, cell.col],
+			[cell.row + 1, cell.col],
+			[cell.row, cell.col - 1],
+			[cell.row, cell.col + 1],
+		]
+
+		if (sideNeighbors.some(([row, col]) =>
+			row >= 0 && row < BOARD_SIZE &&
+			col >= 0 && col < BOARD_SIZE &&
+			board[row][col].player === player.id
+		)) return false
+
+		const diagonalNeighbors = [
+			[cell.row - 1, cell.col - 1],
+			[cell.row - 1, cell.col + 1],
+			[cell.row + 1, cell.col - 1],
+			[cell.row + 1, cell.col + 1],
+		]
+
+		if (diagonalNeighbors.some(([row, col]) =>
+			row >= 0 && row < BOARD_SIZE &&
+			col >= 0 && col < BOARD_SIZE &&
+			board[row][col].player === player.id
+		)) touchesOwnPieceDiagonally = true
+	}
+
+	return touchesOwnPieceDiagonally
+}
+
 
 function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 	const { classes } = useStyles()
@@ -92,8 +135,6 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 	const cursorPieceRef = useRef(null)
 	const cursorPositionRef = useRef({ x: 0, y: 0 })
 	const cursorFrameRef = useRef(null)
-	const validationSequenceRef = useRef(0)
-	const hoverTimerRef = useRef(null)
 
 	const [credentials] = useState(() => {
 		const stored = localStorage.getItem(storageKey)
@@ -111,49 +152,50 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 	const [isRestarting, setIsRestarting] = useState(false)
 	const [isWinnerModalClosed, setIsWinnerModalClosed] = useState(false)
 
-	const me = useMemo(
-		() => game?.players.find(player => player.id === credentials?.playerId),
+	const me = useMemo(() => 
+		game?.players.find(player => player.id === credentials?.playerId),
 		[game, credentials]
 	)
 
-	const currentPlayer = useMemo(
-		() => game?.players.find(player => player.id === game.currentPlayerId),
+	const currentPlayer = useMemo(() => 
+		game?.players.find(player => player.id === game.currentPlayerId),
 		[game]
 	)
 
-	const pieces = useMemo(
-		() => (me?.pieces || []).map(piece => ({
+	const pieces = useMemo(() => 
+		(me?.pieces || []).map(piece => ({
 			...piece,
 			rotation: pieceRotations[piece.name] || 0,
 		})),
 		[me, pieceRotations]
 	)
 
-	const selectedPiece = useMemo(
-		() => pieces.find(piece => piece.name === selectedPieceName && !piece.placed) || null,
+	const selectedPiece = useMemo(() => 
+		pieces.find(piece => piece.name === selectedPieceName && !piece.placed) || null,
 		[pieces, selectedPieceName]
 	)
 
-	const canMove =
-		game?.status === 'playing' &&
-		game.currentPlayerId === credentials?.playerId
-
+	const canMove = game?.status === 'playing' && game.currentPlayerId === credentials?.playerId
 	const board = game?.board || EMPTY_BOARD
 	const isFinished = game?.status === 'finished'
 	const boardRotation = rotationForCorner(me?.corner)
-	const winner = useMemo(
-		() => game?.players.find(player => player.id === game?.winnerId),
+
+	const winner = useMemo(() => 
+		game?.players.find(player => player.id === game?.winnerId),
 		[game]
 	)
+
 	const leaderboard = game?.leaderboard || []
-	const joinedPlayerNames = useMemo(
-		() => new Set((game?.players || []).map(player => player.name)),
+
+	const joinedPlayerNames = useMemo(() => 
+		new Set((game?.players || []).map(player => player.name)),
 		[game]
 	)
+
 	const readyCount = game?.players.length || 0
 	const isWaitingForPlayers = game?.status === 'waiting'
-	const playerProgress = useMemo(
-		() => {
+
+	const playerProgress = useMemo(() => {
 			const knownTotalBlocks = totalBlockCount(game?.players[0])
 
 			return PLAYER_PANEL_ORDER.map(name => {
@@ -175,15 +217,18 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 		[game]
 	)
 
+
 	useEffect(() => {
 		if (game && !credentials) {
 			onNeedsColor()
 		}
 	}, [game, credentials, onNeedsColor])
 
+
 	useEffect(() => {
 		setIsWinnerModalClosed(false)
 	}, [game?.winnerId])
+
 
 	useEffect(() => {
 		let isActive = true
@@ -213,6 +258,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 			isActive = false
 		}
 	}, [gameId, credentials])
+
 
 	useEffect(() => {
 		if (!credentials) return
@@ -250,6 +296,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 		}
 	}, [gameId, credentials])
 
+
 	useEffect(() => {
 		const handleKeyDown = event => {
 			if (!selectedPieceName) return
@@ -273,6 +320,20 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 			window.removeEventListener('keydown', handleKeyDown)
 		}
 	}, [selectedPieceName])
+
+
+	useLayoutEffect(() => {
+		const element = cursorPieceRef.current
+
+		if (!element || !selectedPiece) return
+
+		const { width, height } = element.getBoundingClientRect()
+		const { x, y } = cursorPositionRef.current
+
+		element.style.transform =
+			`translate3d(${x - width / 2}px, ${y - height / 2}px, 0)`
+	}, [selectedPiece])
+
 
 	useEffect(() => {
 		if (!selectedPiece) return
@@ -302,16 +363,14 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 		}
 	}, [selectedPiece])
 
-	useEffect(() => () => clearTimeout(hoverTimerRef.current), [])
 
 	useEffect(() => {
 		if (!selectedPiece) return
 
 		const handleOutsidePointerDown = event => {
 			if (event.target.closest('[data-game-board]')) return
+			if (event.target.closest('[data-game-piece]')) return
 
-			validationSequenceRef.current += 1
-			clearTimeout(hoverTimerRef.current)
 			lastHoverTargetRef.current = null
 			setHoverCells([])
 			setSelectedPieceName(null)
@@ -324,10 +383,12 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 		}
 	}, [selectedPiece])
 
+
 	const handleCopyInvite = async () => {
 		await navigator.clipboard.writeText(gameId)
 		setLastMessage('Invite code copied.')
 	}
+
 
 	const handleQuit = async () => {
 		if (
@@ -376,8 +437,6 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 			return
 		}
 
-		validationSequenceRef.current += 1
-		clearTimeout(hoverTimerRef.current)
 		socketRef.current?.send(JSON.stringify({
 			type: 'place_piece',
 			pieceName: selectedPiece.name,
@@ -389,85 +448,53 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 	}
 
 	const handleBoardLeave = useCallback(() => {
-		validationSequenceRef.current += 1
-		clearTimeout(hoverTimerRef.current)
 		lastHoverTargetRef.current = null
 		setHoverCells([])
 	}, [])
 
 	const handleTileHover = useCallback((row, col, viewRow, viewCol, offsetX = 0.5, offsetY = 0.5) => {
-		const validationSequence = ++validationSequenceRef.current
-		clearTimeout(hoverTimerRef.current)
 		lastHoverTargetRef.current = { row, col, viewRow, viewCol, offsetX, offsetY }
 
-		if (!canMove || !selectedPiece || !credentials) {
+		if (!canMove || !selectedPiece || !me) {
 			setHoverCells([])
 			return
 		}
-
-		setHoverCells([])
 
 		const rotatedCells = rotationForCells(selectedPiece.cells, selectedPiece.rotation)
 		const minRow = Math.min(...rotatedCells.map(cell => cell[0]))
 		const minCol = Math.min(...rotatedCells.map(cell => cell[1]))
 		const pieceRows = Math.max(...rotatedCells.map(cell => cell[0])) - minRow + 1
 		const pieceCols = Math.max(...rotatedCells.map(cell => cell[1])) - minCol + 1
-		const anchorViewRow = Math.round(viewRow + offsetY - pieceRows / 2)
-		const anchorViewCol = Math.round(viewCol + offsetX - pieceCols / 2)
-		const newHoverCells = []
+		const pointerRow = viewRow + offsetY
+		const pointerCol = viewCol + offsetX
+		const isFirstMove = !me.pieces.some(piece => piece.placed)
+		let nearestCells = []
+		let nearestDistance = Infinity
 
-		for (const cell of rotatedCells) {
-			const newViewRow = anchorViewRow + (cell[0] - minRow)
-			const newViewCol = anchorViewCol + (cell[1] - minCol)
+		for (let anchorRow = 0; anchorRow <= BOARD_SIZE - pieceRows; anchorRow += 1) {
+			for (let anchorCol = 0; anchorCol <= BOARD_SIZE - pieceCols; anchorCol += 1) {
+				const cells = rotatedCells.map(cell => viewToBoard(
+					anchorRow + cell[0] - minRow,
+					anchorCol + cell[1] - minCol,
+					boardRotation,
+					BOARD_SIZE
+				))
 
-			if (
-				newViewRow < 0 ||
-				newViewRow >= BOARD_SIZE ||
-				newViewCol < 0 ||
-				newViewCol >= BOARD_SIZE
-			) {
-				setHoverCells([])
-				return
+				if (!isValidPlacement(board, cells, me, isFirstMove)) continue
+
+				const rowDistance = anchorRow + pieceRows / 2 - pointerRow
+				const colDistance = anchorCol + pieceCols / 2 - pointerCol
+				const distance = rowDistance ** 2 + colDistance ** 2
+
+				if (distance < nearestDistance) {
+					nearestDistance = distance
+					nearestCells = cells
+				}
 			}
-
-			const { row: newRow, col: newCol } = viewToBoard(
-				newViewRow,
-				newViewCol,
-				boardRotation,
-				BOARD_SIZE
-			)
-
-			if (board[newRow][newCol].occupied) {
-				setHoverCells([])
-				return
-			}
-
-			newHoverCells.push({
-				row: newRow,
-				col: newCol,
-			})
 		}
 
-		hoverTimerRef.current = setTimeout(async () => {
-			try {
-				const result = await validateMove(
-					gameId,
-					credentials,
-					newHoverCells,
-					selectedPiece.name
-				)
-
-				if (validationSequence !== validationSequenceRef.current) return
-
-				setHoverCells(result.valid ? newHoverCells : [])
-			} catch (err) {
-				if (validationSequence !== validationSequenceRef.current) return
-
-				setHoverCells([])
-				setLastMessage(err.message)
-			}
-		}, 55)
-	}, [board, boardRotation, canMove, credentials, gameId, selectedPiece])
+		setHoverCells(nearestCells)
+	}, [board, boardRotation, canMove, me, selectedPiece])
 
 	useEffect(() => {
 		const hoverTarget = lastHoverTargetRef.current
@@ -483,6 +510,8 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 			hoverTarget.offsetY
 		)
 	}, [handleTileHover, selectedPiece])
+	
+
 
 	if (!game) {
 		return (
@@ -832,7 +861,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 						</div>
 					</div>
 
-					<div className={classes.pieceCardGrid}>
+					<div data-game-piece className={classes.pieceCardGrid}>
 						{pieces.filter(piece => !piece.placed).map(piece => (
 							<Piece
 								classes={classes}
@@ -842,14 +871,21 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 								color={me?.color}
 								isSelected={selectedPieceName === piece.name}
 								onClick={event => {
-									if (!piece.placed && canMove) {
-										cursorPositionRef.current = {
-											x: event.clientX,
-											y: event.clientY,
-										}
-										setCursorPosition(cursorPositionRef.current)
-										setSelectedPieceName(piece.name)
+									if (piece.placed || !canMove) return
+
+									if (selectedPieceName === piece.name) {
+										setSelectedPieceName(null)
+										setHoverCells([])
+										lastHoverTargetRef.current = null
+										return
 									}
+
+									cursorPositionRef.current = {
+										x: event.clientX,
+										y: event.clientY,
+									}
+									setCursorPosition(cursorPositionRef.current)
+									setSelectedPieceName(piece.name)
 								}}
 								rotation={piece.rotation}
 							/>
