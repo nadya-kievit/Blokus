@@ -1139,32 +1139,31 @@ const gameStyles = () => ({
 
 	glassPieceTile: {
 		boxShadow: `
-			inset 1px 1px 3px rgba(255, 255, 255, 0.45),
-			inset -1px -1px 3px rgba(0, 45, 120, 0.35),
-			0 1px 3px rgba(0, 0, 0, 0.18)
+			inset 1px 1px 2px rgba(255, 255, 255, 0.32),
+			inset -1px -1px 2px rgba(0, 0, 0, 0.28),
+			0 1px 3px rgba(0, 0, 0, 0.3)
 		`,
 
 		'&::after': {
 			content: '""',
 			position: 'absolute',
-			width: '48%',
-			height: '48%',
+			width: '42%',
+			height: '42%',
 			top: '50%',
 			left: '50%',
 			transform: 'translate(-50%, -50%) rotate(45deg)',
-			borderRadius: 3,
+			borderRadius: 2,
 			background: `
 				linear-gradient(
 					135deg,
-					rgba(0, 35, 120, 0.32) 0%,
-					rgba(255, 255, 255, 0.16) 42%,
-					rgba(255, 255, 255, 0.28) 50%,
-					rgba(0, 35, 120, 0.38) 100%
+					rgba(0, 0, 0, 0.3),
+					rgba(0, 0, 0, 0.16) 52%,
+					rgba(255, 255, 255, 0.1)
 				)
 			`,
 			boxShadow: `
-				inset 2px 2px 3px rgba(0, 35, 120, 0.45),
-				inset -2px -2px 3px rgba(255, 255, 255, 0.22)
+				inset 1px 1px 2px rgba(0, 0, 0, 0.48),
+				inset -1px -1px 1px rgba(255, 255, 255, 0.2)
 			`,
 			pointerEvents: 'none',
 		},

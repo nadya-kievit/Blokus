@@ -34,11 +34,19 @@ function Tile({value, row, col, viewRow, viewCol, onClick, onHover, isHovered, n
 				event.nativeEvent.offsetY / event.currentTarget.clientHeight
 			)}
 			style={{
+				'--piece-color': occupiedColor,
 				background:
 					isHovered
 						? 'rgba(127, 82, 196, 0.62)'
 						: isOccupied
-							? `linear-gradient(145deg, #ffffff 0%, ${occupiedColor} 52%, ${occupiedColor} 100%)`
+							? `
+								linear-gradient(
+									145deg,
+									color-mix(in srgb, ${occupiedColor}, white 24%) 0%,
+									${occupiedColor} 48%,
+									color-mix(in srgb, ${occupiedColor}, black 16%) 100%
+								)
+							`
 							: 'rgba(21, 17, 34, 0.96)',
 
 				borderTop: shouldRemoveTopBorder

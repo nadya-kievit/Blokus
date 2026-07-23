@@ -16,8 +16,8 @@ function bordersForCell(cell, cellKeys, innerBorder, outerBorder) {
 export function CursorPiece({ piece, rotation, flipped, color, cursorRef, position, classes }) {
     const size = 35
     const activeColor = color || '#0077ee'
-    const innerBorder = '1px solid rgba(0, 45, 120, 0.75)'
-    const outerBorder = '1px solid rgba(0, 45, 120, 0.75)'
+    const innerBorder = '1px solid transparent'
+    const outerBorder = '1px solid rgba(111, 101, 139, 0.62)'
     const rotatedCells = piece.cells.map(([row, col]) => {
         const transformedCol = flipped ? -col : col
 
@@ -52,18 +52,26 @@ export function CursorPiece({ piece, rotation, flipped, color, cursorRef, positi
             {rotatedCells.map((cell, index) => (
                 <div
                     key={index}
-                    className={classes.pieceTile}
+                    className={classes.glassPieceTile}
                     style={{
                         position: 'absolute',
                         boxSizing: 'border-box',
+                        overflow: 'hidden',
                         width: size,
                         height: size,
                         top: (cell[0] - minRow) * size,
                         left: (cell[1] - minCol) * size,
-                        background: `linear-gradient(145deg, #ffffff 0%, ${activeColor} 55%, ${activeColor} 100%)`,
+                        '--piece-color': activeColor,
+                        background: `
+                            linear-gradient(
+                                145deg,
+                                color-mix(in srgb, ${activeColor}, white 24%) 0%,
+                                ${activeColor} 48%,
+                                color-mix(in srgb, ${activeColor}, black 16%) 100%
+                            )
+                        `,
                         ...bordersForCell(cell, cellKeys, innerBorder, outerBorder),
                         borderRadius: 2,
-                        boxShadow: 'inset 2px 2px 4px rgba(255,255,255,0.55), inset -2px -2px 4px rgba(0,40,120,0.4), 0 2px 4px rgba(0,0,0,0.22)',
                     }}
                 />
             ))}
