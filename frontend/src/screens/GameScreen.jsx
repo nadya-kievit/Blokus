@@ -609,7 +609,6 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 						{connectionStatus}
 					</div>
 				</div>
-
 				<div className={classes.gameActions}>
 					<div className={classes.headerCode}>
 						Code <strong>{gameId}</strong>
