@@ -606,7 +606,6 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 								classes[connectionStatus]
 							)}
 						/>
-
 						{connectionStatus}
 					</div>
 				</div>
