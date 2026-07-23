@@ -81,8 +81,8 @@ export function CursorPiece({ piece, rotation, flipped, color, cursorRef, positi
 
 function Piece({ piece, placed, isSelected, onClick, rotation, flipped, color, classes }) {
 
-    const size = 15
-    const cardSize = 92
+    const size = 13
+    const cardSize = 72
     const activeColor = color || '#0077ee'
     const innerBorder = '1px solid rgba(0, 45, 120, 0.75)'
     const outerBorder = '1px solid rgba(0, 45, 120, 0.75)'
