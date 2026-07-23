@@ -599,7 +599,6 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 					<h1 className={clsx(classes.gameTitle, classes.gameHeaderTitle)}>
 						Blokus
 					</h1>
-
 					<div className={classes.connectionRow}>
 						<span
 							className={clsx(
