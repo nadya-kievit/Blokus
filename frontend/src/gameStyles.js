@@ -46,7 +46,9 @@ export const globalGameStyles = {
 const gameStyles = () => ({
 
 	gamePage: {
+		'--board-cell-size': 'clamp(28px, calc((100vh - 210px) / 20), 37px)',
 		minHeight: '100vh',
+		height: '100vh',
 		width: '100%',
 		boxSizing: 'border-box',
 		padding: '14px 17px 24px',
@@ -75,18 +77,19 @@ const gameStyles = () => ({
 		alignItems: 'center',
 		justifyContent: 'center',
 		gap: 12,
+		transform: 'translateY(-20px)',
 	},
 
 	piecesRight: {
 		position: 'absolute',
-		right: 32,
-		top: '50%',
+		right: 28,
+		top: 'calc(50% - 20px)',
 		transform: 'translateY(-50%)',
 
 		boxSizing: 'border-box',
-		width: 430,
+		width: 460,
 		height: '100%',
-		maxHeight: 760,
+		maxHeight: 790,
 		display: 'flex',
 		flexDirection: 'column',
 		overflow: 'hidden',
@@ -101,8 +104,8 @@ const gameStyles = () => ({
 
 	playersLeftPanel: {
 		position: 'absolute',
-		left: 32,
-		top: '50%',
+		left: 28,
+		top: 'calc(50% - 20px)',
 		transform: 'translateY(-50%)',
 		zIndex: 2,
 		width: 420,
@@ -1011,20 +1014,20 @@ const gameStyles = () => ({
 
 	pieceCardGrid: {
 		display: 'grid',
-		gridTemplateColumns: 'repeat(4, 86px)',
+		gridTemplateColumns: 'repeat(4, 92px)',
 		gap: 8,
 		justifyContent: 'space-between',
 	},
 
 	pieceGridItem: {
-		width: 86,
-		height: 86,
+		width: 92,
+		height: 92,
 	},
 
 	pieceCard: {
 		position: 'relative',
-		width: 86,
-		height: 86,
+		width: 92,
+		height: 92,
 		boxSizing: 'border-box',
 		border: '1px solid rgba(147, 121, 181, 0.34)',
 		borderRadius: 9,
@@ -1327,8 +1330,8 @@ const gameStyles = () => ({
 
 	board: {
 		display: 'grid',
-		gridTemplateColumns: 'repeat(20, 35px)',
-		gridTemplateRows: 'repeat(20, 35px)',
+		gridTemplateColumns: 'repeat(20, var(--board-cell-size))',
+		gridTemplateRows: 'repeat(20, var(--board-cell-size))',
 		width: 'fit-content',
 		height: 'fit-content',
 		padding: 10,
@@ -1343,8 +1346,8 @@ const gameStyles = () => ({
 	},
 
 	tile: {
-		width: 35,
-		height: 35,
+		width: 'var(--board-cell-size)',
+		height: 'var(--board-cell-size)',
 		boxSizing: 'border-box',
 		position: 'relative',
 		overflow: 'hidden',
