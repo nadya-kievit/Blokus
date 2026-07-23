@@ -12,11 +12,7 @@ export const globalGameStyles = {
 			minHeight: '100vh',
 			width: '100%',
 			overflowX: 'hidden',
-			background: `
-				radial-gradient(circle at top left, rgba(255, 255, 255, 0.65), transparent 34%),
-				radial-gradient(circle at top right, rgba(255, 255, 255, 0.38), transparent 30%),
-				linear-gradient(135deg, #eefaff 0%, #d7edf8 42%, #bdddf0 100%)
-			`,
+			background: 'rgba(21, 13, 33)',
 			fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
 		},
 
@@ -31,14 +27,14 @@ export const globalGameStyles = {
 		},
 
 		button: {
-			border: '1px solid rgba(23, 73, 107, 0.35)',
+			border: '1px solid rgba(151, 104, 216, 0.32)',
 			borderRadius: 8,
 			padding: '10px 14px',
-			background: 'linear-gradient(145deg, #ffffff, #d7edf8)',
-			color: '#17496b',
+			background: 'linear-gradient(145deg, #21172f, #171020)',
+			color: '#f4f0ff',
 			fontWeight: 750,
 			cursor: 'pointer',
-			boxShadow: '0 4px 10px rgba(35, 72, 100, 0.16)',
+			boxShadow: '0 4px 12px rgba(5, 2, 12, 0.36)',
 		},
 
 		'button:disabled': {
@@ -81,14 +77,6 @@ const gameStyles = () => ({
 		gap: 12,
 	},
 
-	turnBannerSlot: {
-		height: 78,
-		flex: '0 0 78px',
-		display: 'flex',
-		alignItems: 'center',
-		justifyContent: 'center',
-	},
-
 	piecesRight: {
 		position: 'absolute',
 		right: 32,
@@ -103,16 +91,10 @@ const gameStyles = () => ({
 		flexDirection: 'column',
 		overflow: 'hidden',
 		padding: '20px 18px 17px',
-		border: '1px solid rgba(255, 255, 255, 0.9)',
+		border: '1px solid rgba(155, 113, 211, 0.28)',
 		borderRadius: 14,
-		background: `
-			linear-gradient(
-			145deg,
-			rgba(250, 254, 255, 0.92),
-			rgba(235, 247, 253, 0.88)
-			)
-		`,
-		boxShadow: '0 13px 30px rgba(67, 124, 163, 0.17)',
+		background: 'rgba(24, 16, 37, 0.94)',
+		boxShadow: '0 16px 38px rgba(3, 1, 9, 0.46)',
 		backdropFilter: 'blur(12px)',
 		WebkitBackdropFilter: 'blur(12px)',
 	},
@@ -141,13 +123,13 @@ const gameStyles = () => ({
 		minHeight: 158,
 		boxSizing: 'border-box',
 		padding: '18px 17px 15px',
-		border: '1px solid rgba(255, 255, 255, 0.92)',
+		border: '1px solid rgba(155, 113, 211, 0.28)',
 		borderRadius: 8,
-		background: 'rgba(255, 255, 255, 0.82)',
-		boxShadow: '0 8px 18px rgba(67, 124, 163, 0.13)',
+		background: 'rgba(24, 16, 37, 0.92)',
+		boxShadow: '0 10px 24px rgba(3, 1, 9, 0.38)',
 		backdropFilter: 'blur(10px)',
 		WebkitBackdropFilter: 'blur(10px)',
-		color: '#17496b',
+		color: '#f2eeff',
 	},
 
 	playerStatusActive: {
@@ -209,7 +191,7 @@ const gameStyles = () => ({
 		alignItems: 'center',
 		gap: 8,
 		marginTop: 16,
-		color: '#52728a',
+		color: '#c5bddb',
 		fontSize: 14,
 		fontWeight: 750,
 
@@ -231,7 +213,7 @@ const gameStyles = () => ({
 	},
 
 	playerStatusBlocks: {
-		color: '#123f61',
+		color: '#ffffff',
 		fontSize: 30,
 		fontWeight: 900,
 		lineHeight: 1,
@@ -239,7 +221,7 @@ const gameStyles = () => ({
 
 	playerStatusCaption: {
 		marginTop: 6,
-		color: '#52728a',
+		color: '#c5bddb',
 		fontSize: 14,
 		fontWeight: 700,
 		lineHeight: 1,
@@ -263,7 +245,7 @@ const gameStyles = () => ({
 	},
 
 	playerMiniBlockEmpty: {
-		background: '#dce7ef !important',
+		background: '#3b334a !important',
 		boxShadow: 'none !important',
 	},
 
@@ -274,7 +256,7 @@ const gameStyles = () => ({
 	},
 
 	progressOverviewTitle: {
-		color: '#244f70',
+		color: '#ffffff',
 		fontSize: 13,
 		fontWeight: 900,
 		letterSpacing: 1,
@@ -284,10 +266,10 @@ const gameStyles = () => ({
 
 	progressOverviewCard: {
 		padding: '15px 17px',
-		border: '1px solid rgba(255, 255, 255, 0.9)',
+		border: '1px solid rgba(155, 113, 211, 0.28)',
 		borderRadius: 8,
-		background: 'rgba(255, 255, 255, 0.78)',
-		boxShadow: '0 8px 18px rgba(67, 124, 163, 0.13)',
+		background: 'rgba(24, 16, 37, 0.92)',
+		boxShadow: '0 10px 24px rgba(3, 1, 9, 0.38)',
 		backdropFilter: 'blur(10px)',
 		WebkitBackdropFilter: 'blur(10px)',
 	},
@@ -298,7 +280,7 @@ const gameStyles = () => ({
 		alignItems: 'center',
 		gap: 13,
 		minHeight: 39,
-		borderBottom: '1px solid rgba(76, 119, 148, 0.1)',
+		borderBottom: '1px solid rgba(155, 113, 211, 0.16)',
 
 		'&:last-child': {
 			borderBottom: 0,
@@ -310,7 +292,7 @@ const gameStyles = () => ({
 		alignItems: 'center',
 		gap: 10,
 		minWidth: 0,
-		color: '#17496b',
+		color: '#f2eeff',
 		fontSize: 14,
 		fontWeight: 850,
 		whiteSpace: 'nowrap',
@@ -338,7 +320,7 @@ const gameStyles = () => ({
 	},
 
 	progressOverviewCount: {
-		color: '#315b78',
+		color: '#c5bddb',
 		fontSize: 13,
 		fontWeight: 750,
 		textAlign: 'right',
@@ -359,23 +341,23 @@ const gameStyles = () => ({
 		padding: 28,
 		boxSizing: 'border-box',
 		borderRadius: 10,
-		background: 'rgba(255, 255, 255, 0.64)',
-		border: '2px solid rgba(255, 255, 255, 0.8)',
-		boxShadow: '0 14px 28px rgba(35, 72, 100, 0.22)',
+		background: 'rgba(24, 16, 37, 0.94)',
+		border: '1px solid rgba(155, 113, 211, 0.3)',
+		boxShadow: '0 18px 42px rgba(3, 1, 9, 0.48)',
 		backdropFilter: 'blur(8px)',
 		WebkitBackdropFilter: 'blur(8px)',
 		textAlign: 'center',
 
 		'& h2': {
 			margin: '0 0 10px',
-			color: '#17496b',
+			color: '#f2eeff',
 			fontSize: 24,
 			fontWeight: 750,
 		},
 
 		'& p': {
 			margin: '0 0 22px',
-			color: '#35657f',
+			color: '#c5bddb',
 			fontSize: 15,
 			lineHeight: 1.45,
 		},
@@ -386,13 +368,13 @@ const gameStyles = () => ({
 		alignItems: 'center',
 		gap: 12,
 		margin: '20px 0',
-		color: '#66859a',
+		color: '#958ba9',
 
 		'&::before, &::after': {
 			content: '""',
 			flex: 1,
 			height: 1,
-			background: 'rgba(23, 73, 107, 0.2)',
+			background: 'rgba(155, 113, 211, 0.24)',
 		},
 	},
 
@@ -417,11 +399,11 @@ const gameStyles = () => ({
 			width: 46,
 			height: 58,
 			boxSizing: 'border-box',
-			border: '1px solid rgba(114, 143, 162, 0.28)',
+			border: '1px solid rgba(155, 113, 211, 0.32)',
 			borderRadius: 7,
 			padding: 0,
-			background: 'rgba(255, 255, 255, 0.78)',
-			color: '#123f61',
+			background: 'rgba(18, 11, 29, 0.88)',
+			color: '#f4f0ff',
 			font: 'inherit',
 			fontSize: 24,
 			fontWeight: 850,
@@ -435,10 +417,10 @@ const gameStyles = () => ({
 			transition: 'border-color 0.12s ease, box-shadow 0.12s ease, transform 0.12s ease',
 
 			'&:focus': {
-				borderColor: 'rgba(46, 105, 220, 0.55)',
+				borderColor: 'rgba(169, 108, 255, 0.78)',
 				boxShadow: `
-					0 0 0 3px rgba(46, 105, 220, 0.13),
-					0 6px 13px rgba(35, 72, 100, 0.13)
+					0 0 0 3px rgba(169, 108, 255, 0.18),
+					0 6px 16px rgba(3, 1, 9, 0.34)
 				`,
 				transform: 'translateY(-1px)',
 			},
@@ -446,7 +428,7 @@ const gameStyles = () => ({
 	},
 
 	inviteLabel: {
-		color: '#66859a',
+		color: '#9d93b1',
 		fontSize: 12,
 		fontWeight: 750,
 		textTransform: 'uppercase',
@@ -455,7 +437,7 @@ const gameStyles = () => ({
 
 	inviteCode: {
 		margin: '2px 0 22px',
-		color: '#17496b',
+		color: '#b77cff',
 		fontSize: 34,
 		fontWeight: 850,
 		letterSpacing: 7,
@@ -485,16 +467,10 @@ const gameStyles = () => ({
 		width: '100%',
 		minHeight: 68,
 		padding: '10px 12px 10px 21px',
-		border: '1px solid rgba(255, 255, 255, 0.82)',
+		border: '1px solid rgba(155, 113, 211, 0.26)',
 		borderRadius: 11,
-		background: `
-			linear-gradient(
-				105deg,
-				rgba(255, 255, 255, 0.88),
-				rgba(238, 248, 255, 0.78)
-			)
-		`,
-		boxShadow: '0 7px 18px rgba(65, 119, 157, 0.18)',
+		background: 'rgba(22, 14, 33, 0.96)',
+		boxShadow: '0 10px 28px rgba(3, 1, 9, 0.42)',
 		backdropFilter: 'blur(12px)',
 		WebkitBackdropFilter: 'blur(12px)',
 		zIndex: 3,
@@ -509,10 +485,10 @@ const gameStyles = () => ({
 	gameTitle: {
 		textAlign: 'center',
 		margin: 0,
-		color: '#17496b',
+		color: '#eee9ff',
 		fontSize: 42,
 		letterSpacing: 1,
-		textShadow: '0 2px 4px rgba(255, 255, 255, 0.7)',
+		textShadow: '0 2px 10px rgba(126, 79, 210, 0.38)',
 	},
 
 	gameHeaderTitle: {
@@ -520,8 +496,8 @@ const gameStyles = () => ({
 		fontWeight: 850,
 		lineHeight: 1,
 		letterSpacing: 0.4,
-		color: '#0d4a70',
-		textShadow: '0 1px 2px rgba(255, 255, 255, 0.9)',
+		color: '#e8e2ff',
+		textShadow: '0 2px 8px rgba(130, 87, 218, 0.38)',
 	},
 
 	connectionRow: {
@@ -529,7 +505,7 @@ const gameStyles = () => ({
 		alignItems: 'center',
 		gap: 6,
 		marginTop: 5,
-		color: '#46647a',
+		color: '#c5bddb',
 		fontSize: 11,
 		fontWeight: 650,
 		textTransform: 'capitalize',
@@ -576,11 +552,11 @@ const gameStyles = () => ({
 		alignItems: 'center',
 		gap: 7,
 		padding: '0 7px',
-		color: '#42647d',
+		color: '#bdb4d3',
 		fontSize: 12,
 
 		'& strong': {
-			color: '#2e69dc',
+			color: '#a96cff',
 			fontSize: 15,
 			letterSpacing: 0.5,
 		},
@@ -593,10 +569,10 @@ const gameStyles = () => ({
 		gap: 7,
 		minHeight: 34,
 		padding: '8px 12px',
-		borderColor: 'rgba(84, 122, 150, 0.15)',
+		borderColor: 'rgba(155, 113, 211, 0.28)',
 		borderRadius: 7,
-		background: 'rgba(255, 255, 255, 0.88)',
-		boxShadow: '0 3px 8px rgba(42, 85, 116, 0.12)',
+		background: 'rgba(26, 17, 39, 0.9)',
+		boxShadow: '0 4px 12px rgba(3, 1, 9, 0.3)',
 		fontSize: 12,
 
 		'& svg': {
@@ -611,17 +587,17 @@ const gameStyles = () => ({
 	},
 
 	copyButton: {
-		color: '#294f6e',
+		color: '#f2eeff',
 
 		'& svg': {
-			color: '#4079ed',
+			color: '#a96cff',
 		},
 	},
 
 	dangerButton: {
 		color: '#e5252a',
 		borderColor: 'rgba(229, 37, 42, 0.12)',
-		background: 'rgba(255, 255, 255, 0.9)',
+		background: 'rgba(26, 17, 39, 0.9)',
 	},
 
 	playersBar: {
@@ -643,19 +619,19 @@ const gameStyles = () => ({
 		padding: '0 12px',
 		border: '2px solid rgba(255, 255, 255, 0.8)',
 		borderRadius: 8,
-		background: 'rgba(255, 255, 255, 0.64)',
-		color: '#17496b',
+		background: 'rgba(24, 16, 37, 0.9)',
+		color: '#f2eeff',
 		fontSize: 13,
 		fontWeight: 750,
 		boxShadow: '0 4px 10px rgba(35, 72, 100, 0.12)',
 	},
 
 	active: {
-		background: 'rgba(255, 255, 255, 0.9)',
+		background: 'rgba(39, 26, 55, 0.94)',
 		boxShadow: '0 0 0 3px rgba(255, 255, 255, 0.72), 0 8px 16px rgba(35, 72, 100, 0.2)',
 	},
 	empty: {
-		color: '#66859a',
+		color: '#9d93b1',
 		borderColor: 'rgba(255, 255, 255, 0.8)',
 	},
 
@@ -670,7 +646,7 @@ const gameStyles = () => ({
 	},
 
 	playerSeat: {
-		color: '#66859a',
+		color: '#9d93b1',
 		fontSize: 11,
 		fontWeight: 650,
 	},
@@ -683,8 +659,8 @@ const gameStyles = () => ({
 		top: 152,
 		padding: '9px 14px',
 		borderRadius: 8,
-		background: 'rgba(255, 255, 255, 0.76)',
-		color: '#17496b',
+		background: 'rgba(24, 16, 37, 0.94)',
+		color: '#f2eeff',
 		fontSize: 14,
 		fontWeight: 750,
 		boxShadow: '0 6px 14px rgba(35, 72, 100, 0.16)',
@@ -700,11 +676,11 @@ const gameStyles = () => ({
 		maxWidth: 'calc(100vw - 48px)',
 		boxSizing: 'border-box',
 		padding: '12px 18px',
-		border: '1px solid rgba(255, 255, 255, 0.88)',
+		border: '1px solid rgba(155, 113, 211, 0.28)',
 		borderRadius: 14,
-		background: 'rgba(255, 255, 255, 0.86)',
-		color: '#123f61',
-		boxShadow: '0 10px 24px rgba(65, 119, 157, 0.17)',
+		background: 'rgba(24, 16, 37, 0.94)',
+		color: '#f2eeff',
+		boxShadow: '0 12px 28px rgba(3, 1, 9, 0.42)',
 		backdropFilter: 'blur(12px)',
 		WebkitBackdropFilter: 'blur(12px)',
 	},
@@ -724,7 +700,7 @@ const gameStyles = () => ({
 		padding: '8px 11px',
 		borderRadius: 7,
 		borderColor: 'rgba(37, 181, 100, 0.2)',
-		background: 'rgba(255, 255, 255, 0.92)',
+		background: 'rgba(30, 20, 44, 0.94)',
 		color: '#20824b',
 		fontSize: 12,
 		fontWeight: 850,
@@ -758,8 +734,8 @@ const gameStyles = () => ({
 		'& svg': {
 			width: 23,
 			height: 23,
-			fill: '#16405f',
-			stroke: '#16405f',
+			fill: '#170f25',
+			stroke: '#170f25',
 			strokeWidth: 1.8,
 			strokeLinecap: 'round',
 			strokeLinejoin: 'round',
@@ -772,7 +748,7 @@ const gameStyles = () => ({
 	},
 
 	turnTitle: {
-		color: '#173f67',
+		color: '#f6f2ff',
 		fontSize: 16,
 		fontWeight: 850,
 		lineHeight: 1.08,
@@ -780,7 +756,7 @@ const gameStyles = () => ({
 
 	turnSubtitle: {
 		marginTop: 4,
-		color: '#42647d',
+		color: '#c5bddb',
 		fontSize: 13,
 		fontWeight: 700,
 		lineHeight: 1.15,
@@ -794,8 +770,8 @@ const gameStyles = () => ({
 		top: 196,
 		padding: '9px 14px',
 		borderRadius: 8,
-		background: 'rgba(255, 255, 255, 0.76)',
-		color: '#17496b',
+		background: 'rgba(24, 16, 37, 0.94)',
+		color: '#f2eeff',
 		fontSize: 14,
 		fontWeight: 750,
 		boxShadow: '0 6px 14px rgba(35, 72, 100, 0.16)',
@@ -819,7 +795,7 @@ const gameStyles = () => ({
 		justifyContent: 'center',
 		padding: 24,
 		boxSizing: 'border-box',
-		background: 'rgba(17, 48, 70, 0.28)',
+		background: 'rgba(7, 4, 12, 0.62)',
 		backdropFilter: 'blur(4px)',
 		WebkitBackdropFilter: 'blur(4px)',
 	},
@@ -830,11 +806,11 @@ const gameStyles = () => ({
 		maxWidth: 'calc(100vw - 48px)',
 		boxSizing: 'border-box',
 		padding: '30px 28px 26px',
-		border: '1px solid rgba(255, 255, 255, 0.92)',
+		border: '1px solid rgba(155, 113, 211, 0.3)',
 		borderRadius: 10,
-		background: 'rgba(250, 254, 255, 0.94)',
-		boxShadow: '0 22px 55px rgba(20, 63, 93, 0.28)',
-		color: '#123f61',
+		background: 'rgba(24, 16, 37, 0.98)',
+		boxShadow: '0 24px 60px rgba(3, 1, 9, 0.62)',
+		color: '#f2eeff',
 		textAlign: 'center',
 	},
 
@@ -849,8 +825,8 @@ const gameStyles = () => ({
 		alignItems: 'center',
 		justifyContent: 'center',
 		borderRadius: 7,
-		background: 'rgba(255, 255, 255, 0.78)',
-		color: '#42647d',
+		background: 'rgba(40, 27, 57, 0.9)',
+		color: '#cfc6ed',
 
 		'& svg': {
 			width: 18,
@@ -882,7 +858,7 @@ const gameStyles = () => ({
 			width: 34,
 			height: 34,
 			fill: 'rgba(255, 255, 255, 0.68)',
-			stroke: '#123f61',
+			stroke: '#170f25',
 			strokeWidth: 1.7,
 			strokeLinecap: 'round',
 			strokeLinejoin: 'round',
@@ -890,7 +866,7 @@ const gameStyles = () => ({
 	},
 
 	winnerTitle: {
-		color: '#123f61',
+		color: '#f4f0ff',
 		fontSize: 30,
 		fontWeight: 900,
 		lineHeight: 1.05,
@@ -898,7 +874,7 @@ const gameStyles = () => ({
 
 	winnerSubtitle: {
 		marginTop: 7,
-		color: '#52728a',
+		color: '#c5bddb',
 		fontSize: 14,
 		fontWeight: 800,
 	},
@@ -918,9 +894,9 @@ const gameStyles = () => ({
 		minHeight: 46,
 		padding: '8px 11px',
 		boxSizing: 'border-box',
-		border: '1px solid rgba(87, 131, 160, 0.12)',
+		border: '1px solid rgba(155, 113, 211, 0.22)',
 		borderRadius: 8,
-		background: 'rgba(255, 255, 255, 0.82)',
+		background: 'rgba(19, 12, 30, 0.78)',
 		textAlign: 'left',
 	},
 
@@ -932,7 +908,7 @@ const gameStyles = () => ({
 		alignItems: 'center',
 		justifyContent: 'center',
 		background: 'var(--leader-color)',
-		color: '#123f61',
+		color: '#170f25',
 		fontSize: 14,
 		fontWeight: 900,
 		boxShadow: 'inset 0 1px 2px rgba(255, 255, 255, 0.5)',
@@ -943,7 +919,7 @@ const gameStyles = () => ({
 		alignItems: 'center',
 		gap: 9,
 		minWidth: 0,
-		color: '#17496b',
+		color: '#f2eeff',
 		fontSize: 16,
 		fontWeight: 850,
 
@@ -957,7 +933,7 @@ const gameStyles = () => ({
 	},
 
 	leaderboardBlocks: {
-		color: '#315b78',
+		color: '#c5bddb',
 		fontSize: 13,
 		fontWeight: 800,
 		textAlign: 'right',
@@ -979,7 +955,7 @@ const gameStyles = () => ({
 
 	panelEyebrow: {
 		marginBottom: 8,
-		color: '#244f70',
+		color: '#cfc6ed',
 		fontSize: 10,
 		fontWeight: 850,
 		letterSpacing: 0.8,
@@ -990,7 +966,7 @@ const gameStyles = () => ({
 		display: 'flex',
 		alignItems: 'center',
 		gap: 10,
-		color: '#123f61',
+		color: '#ffffff',
 		fontSize: 22,
 		fontWeight: 820,
 		lineHeight: 1,
@@ -1005,7 +981,7 @@ const gameStyles = () => ({
 
 	panelSubtitle: {
 		marginTop: 8,
-		color: '#52728a',
+		color: '#c5bddb',
 		fontSize: 13,
 	},
 
@@ -1015,11 +991,11 @@ const gameStyles = () => ({
 		gap: 10,
 		flex: '0 0 auto',
 		padding: '12px 14px',
-		border: '1px solid rgba(87, 131, 160, 0.09)',
+		border: '1px solid rgba(155, 113, 211, 0.2)',
 		borderRadius: 10,
-		background: 'rgba(255, 255, 255, 0.74)',
-		boxShadow: '0 5px 14px rgba(49, 96, 129, 0.11)',
-		color: '#45677f',
+		background: 'rgba(19, 12, 30, 0.64)',
+		boxShadow: '0 5px 14px rgba(3, 1, 9, 0.28)',
+		color: '#ded7ef',
 		fontSize: 11,
 		fontWeight: 700,
 		lineHeight: 1.25,
@@ -1029,7 +1005,7 @@ const gameStyles = () => ({
 	hintPieceIcon: {
 		width: 20,
 		height: 20,
-		border: '1.5px dashed #7596ae',
+		border: '1.5px dashed #78698f',
 		borderRadius: 2,
 	},
 
@@ -1050,22 +1026,22 @@ const gameStyles = () => ({
 		width: 86,
 		height: 86,
 		boxSizing: 'border-box',
-		border: '1px solid rgba(100, 145, 175, 0.08)',
+		border: '1px solid rgba(147, 121, 181, 0.34)',
 		borderRadius: 9,
-		background: 'rgba(255, 255, 255, 0.76)',
-		boxShadow: '0 4px 11px rgba(56, 105, 139, 0.1)',
+		background: 'rgba(19, 12, 30, 0.78)',
+		boxShadow: '0 5px 14px rgba(3, 1, 9, 0.3)',
 		cursor: 'pointer',
 		transition: 'transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease',
 
 		'&:hover': {
 			transform: 'translateY(-1px)',
-			boxShadow: '0 6px 14px rgba(56, 105, 139, 0.15)',
+			boxShadow: '0 0 0 1px rgba(169, 108, 255, 0.34), 0 8px 18px rgba(3, 1, 9, 0.38)',
 		},
 	},
 
 	selected: {
-		borderColor: 'rgba(46, 105, 220, 0.45)',
-		boxShadow: '0 0 0 2px rgba(46, 105, 220, 0.12), 0 6px 14px rgba(56, 105, 139, 0.14)',
+		borderColor: 'rgba(169, 108, 255, 0.8)',
+		boxShadow: '0 0 0 2px rgba(169, 108, 255, 0.2), 0 7px 18px rgba(3, 1, 9, 0.36)',
 	},
 	placed: {
 		cursor: 'default',
@@ -1074,8 +1050,8 @@ const gameStyles = () => ({
 	piecesRemaining: {
 		margin: 'auto 3px 0',
 		paddingTop: 15,
-		borderTop: '1px solid rgba(73, 119, 150, 0.14)',
-		color: '#315b78',
+		borderTop: '1px solid rgba(155, 113, 211, 0.22)',
+		color: '#c5bddb',
 		fontSize: 12,
 		textAlign: 'left',
 	},
@@ -1097,7 +1073,7 @@ const gameStyles = () => ({
 	},
 
 	used: {
-		background: '#dce4e8 !important',
+		background: '#454052 !important',
 		boxShadow: 'none !important',
 	},
 
@@ -1132,7 +1108,7 @@ const gameStyles = () => ({
 		display: 'flex',
 		alignItems: 'center',
 		justifyContent: 'center',
-		background: 'rgba(255, 255, 255, 0.82)',
+		background: 'rgba(35, 24, 50, 0.92)',
 		border: '1px solid rgba(122, 157, 180, 0.34)',
 		boxShadow: `
 			0 8px 18px rgba(67, 124, 163, 0.12),
@@ -1153,7 +1129,7 @@ const gameStyles = () => ({
 	piecePanelLockMessage: {
 		maxWidth: 210,
 		padding: '2px 8px',
-		color: '#123f61',
+		color: '#f2eeff',
 		fontSize: 15,
 		fontWeight: 850,
 		lineHeight: 1.18,
@@ -1258,7 +1234,7 @@ const gameStyles = () => ({
 		alignItems: 'center',
 		justifyContent: 'center',
 		borderRadius: '50%',
-		background: 'rgba(255, 255, 255, 0.62)',
+		background: 'rgba(24, 16, 37, 0.9)',
 		boxShadow: `
 			0 18px 45px rgba(60, 139, 242, 0.2),
 			inset 0 0 0 1px rgba(255, 255, 255, 0.9)
@@ -1313,7 +1289,7 @@ const gameStyles = () => ({
 		justifyContent: 'center',
 		width: 145,
 		height: 145,
-		color: '#17496b',
+		color: '#f2eeff',
 		textAlign: 'center',
 	},
 
@@ -1329,7 +1305,7 @@ const gameStyles = () => ({
 	},
 
 	readyCount: {
-		color: '#17496b',
+		color: '#f2eeff',
 		fontSize: 31,
 		fontWeight: 900,
 		lineHeight: 1,
@@ -1337,14 +1313,14 @@ const gameStyles = () => ({
 
 	readyLabel: {
 		marginTop: 4,
-		color: '#315b78',
+		color: '#c5bddb',
 		fontSize: 14,
 		fontWeight: 750,
 	},
 
 	readyMessage: {
 		marginTop: 14,
-		color: '#52728a',
+		color: '#9d93b1',
 		fontSize: 13,
 		fontWeight: 650,
 		lineHeight: 1.25,
@@ -1358,12 +1334,12 @@ const gameStyles = () => ({
 		height: 'fit-content',
 		padding: 10,
 		borderRadius: 18,
-		background: 'linear-gradient(145deg, #f8fcff, #dcecf5)',
-		border: '4px solid rgba(255, 255, 255, 0.8)',
+		background: 'linear-gradient(145deg, #21182f, #151020)',
+		border: '4px solid rgba(145, 92, 216, 0.42)',
 		boxShadow: `
-			0 18px 35px rgba(35, 72, 100, 0.35),
-			inset 0 2px 8px rgba(255, 255, 255, 0.9),
-			inset 0 -4px 10px rgba(90, 130, 160, 0.18)
+			0 20px 42px rgba(3, 1, 9, 0.58),
+			0 0 24px rgba(120, 71, 196, 0.16),
+			inset 0 0 0 1px rgba(202, 177, 236, 0.12)
 		`,
 	},
 

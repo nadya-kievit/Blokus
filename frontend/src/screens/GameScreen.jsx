@@ -730,7 +730,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 													style={{
 														background: index < filledSegments
 															? progress.color
-															: '#dce7ef',
+													: '#3b334a',
 													}}
 												/>
 											))}
@@ -835,7 +835,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 													d={arcPaths[index]}
 													className={classes.readyArc}
 													style={{
-														'--seat-color': isReady ? seat.color : '#d9e4ee',
+														'--seat-color': isReady ? seat.color : '#40374e',
 													}}
 												/>
 											)
