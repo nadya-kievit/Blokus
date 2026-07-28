@@ -1,9 +1,11 @@
+import asyncio
 from copy import deepcopy
+import random
 import secrets
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.game.board import Board
 from app.game.pieces import ALL_PIECES
@@ -53,6 +55,9 @@ PLAYER_COLORS = [
 
 games = {}
 connections = {}
+bot_tasks = {}
+
+BOT_MOVE_DELAY_SECONDS = 2
 
 
 class MoveRequest(BaseModel):
@@ -64,6 +69,21 @@ class MoveRequest(BaseModel):
 
 class JoinRequest(BaseModel):
     color: str
+    adminToken: str | None = None
+
+
+class PlayerSettingsRequest(BaseModel):
+    color: str | None = None
+    isBot: bool = False
+
+
+class GameSettingsRequest(BaseModel):
+    moveTimeLimitSeconds: int | None = None
+    players: dict[str, PlayerSettingsRequest] = Field(default_factory=dict)
+
+
+class CreateGameRequest(BaseModel):
+    settings: GameSettingsRequest = Field(default_factory=GameSettingsRequest)
 
 
 class QuitRequest(BaseModel):
@@ -87,9 +107,55 @@ def make_piece_set():
     ]
 
 
-def create_game_state(game_id):
+def make_runtime_player(seat, player_number, settings_player_key, is_bot=False):
+    return {
+        **deepcopy(seat),
+        "id": f"p{player_number}",
+        "settingsPlayerKey": settings_player_key,
+        "token": None if is_bot else secrets.token_urlsafe(16),
+        "pieces": make_piece_set(),
+        "connected": is_bot,
+        "isBot": is_bot,
+        "isOutOfMoves": False,
+        "joinedOrder": None if is_bot else player_number,
+    }
+
+
+def normalize_game_settings(settings):
+    allowed_time_limits = {None, 30, 60, 90}
+    if settings.moveTimeLimitSeconds not in allowed_time_limits:
+        raise HTTPException(
+            status_code=422,
+            detail="Time limit must be no limit, 30, 60, or 90 seconds.",
+        )
+
+    players = {}
+    for index in range(1, len(PLAYER_COLORS) + 1):
+        player_key = f"Player {index}"
+        supplied_player = settings.players.get(player_key)
+        players[player_key] = {
+            "color": None,
+            "isBot": supplied_player.isBot if supplied_player else False,
+        }
+
+    if all(player["isBot"] for player in players.values()):
+        raise HTTPException(
+            status_code=422,
+            detail="At least one player must be human.",
+        )
+
+    return {
+        "moveTimeLimitSeconds": settings.moveTimeLimitSeconds,
+        "players": players,
+    }
+
+
+def create_game_state(game_id, settings):
     return {
         "gameId": game_id,
+        "settings": normalize_game_settings(settings),
+        "adminPlayerId": None,
+        "adminToken": secrets.token_urlsafe(24),
         "board": Board(),
         "players": [],
         "currentTurnIndex": 0,
@@ -112,6 +178,8 @@ def public_player(player):
         "connected": player["connected"],
         "pieces": player["pieces"],
         "isOutOfMoves": player.get("isOutOfMoves", False),
+        "settingsPlayerKey": player["settingsPlayerKey"],
+        "isBot": player.get("isBot", False),
     }
 
 
@@ -124,6 +192,8 @@ def game_snapshot(game):
     return {
         "gameId": game["gameId"],
         "inviteCode": game["gameId"],
+        "settings": game["settings"],
+        "adminPlayerId": game["adminPlayerId"],
         "board": game["board"].get_grid(),
         "players": [public_player(player) for player in game["players"]],
         "currentPlayerId": current_player_id,
@@ -159,10 +229,67 @@ def get_player(game, player_id):
 def authenticate_player(game, player_id, player_token):
     player = get_player(game, player_id)
 
-    if not player or player["token"] != player_token:
+    if not player or player.get("isBot") or player["token"] != player_token:
         raise HTTPException(status_code=403, detail="Invalid player credentials.")
 
     return player
+
+
+def settings_player_number(player_key):
+    return int(player_key.rsplit(" ", 1)[1])
+
+
+def start_game_if_ready(game):
+    if game["hasStarted"]:
+        return False
+
+    human_settings = [
+        player_settings
+        for player_settings in game["settings"]["players"].values()
+        if not player_settings["isBot"]
+    ]
+    if any(player_settings["color"] is None for player_settings in human_settings):
+        return False
+
+    used_colors = {
+        player_settings["color"]
+        for player_settings in game["settings"]["players"].values()
+        if player_settings["color"] is not None
+    }
+    available_seats = [
+        seat for seat in PLAYER_COLORS
+        if seat["name"] not in used_colors
+    ]
+    runtime_player_keys = {
+        player["settingsPlayerKey"]
+        for player in game["players"]
+    }
+
+    for player_key, player_settings in game["settings"]["players"].items():
+        if not player_settings["isBot"] or player_key in runtime_player_keys:
+            continue
+
+        seat = available_seats.pop(0)
+        player_settings["color"] = seat["name"]
+        player_number = game["nextPlayerNumber"]
+        game["nextPlayerNumber"] += 1
+        game["players"].append(
+            make_runtime_player(
+                seat,
+                player_number,
+                settings_player_key=player_key,
+                is_bot=True,
+            )
+        )
+
+    game["players"].sort(
+        key=lambda player: settings_player_number(player["settingsPlayerKey"])
+    )
+    game["currentTurnIndex"] = 0
+    game["status"] = "playing"
+    game["hasStarted"] = True
+    game["notice"] = f'{game["players"][0]["name"]} goes first.'
+    return True
 
 
 def validate_player_move(game, player, move):
@@ -264,42 +391,72 @@ def player_block_count(player):
     )
 
 
+def valid_placements_for_piece(game, player, piece):
+    is_first_move = not any(piece["placed"] for piece in player["pieces"])
+    corner = player["corner"]
+
+    for orientation in piece_orientations(piece):
+        max_row = max(row for row, _ in orientation)
+        max_col = max(col for _, col in orientation)
+
+        for row_offset in range(BOARD_SIZE - max_row):
+            for col_offset in range(BOARD_SIZE - max_col):
+                cells = [
+                    {
+                        "row": row + row_offset,
+                        "col": col + col_offset,
+                    }
+                    for row, col in orientation
+                ]
+                result = validate_move(
+                    board_grid=game["board"].get_grid(),
+                    cells=cells,
+                    is_first_move=is_first_move,
+                    player_id=player["id"],
+                    first_corner=(corner["row"], corner["col"]),
+                )
+
+                if result["valid"]:
+                    yield cells
+
+
 def can_player_move(game, player):
     if game["status"] != "playing":
         return False
 
-    is_first_move = not any(piece["placed"] for piece in player["pieces"])
-    corner = player["corner"]
-
     for piece in player["pieces"]:
-        if piece["placed"]:
-            continue
-
-        for orientation in piece_orientations(piece):
-            max_row = max(row for row, _ in orientation)
-            max_col = max(col for _, col in orientation)
-
-            for row_offset in range(BOARD_SIZE - max_row):
-                for col_offset in range(BOARD_SIZE - max_col):
-                    cells = [
-                        {
-                            "row": row + row_offset,
-                            "col": col + col_offset,
-                        }
-                        for row, col in orientation
-                    ]
-                    result = validate_move(
-                        board_grid=game["board"].get_grid(),
-                        cells=cells,
-                        is_first_move=is_first_move,
-                        player_id=player["id"],
-                        first_corner=(corner["row"], corner["col"]),
-                    )
-
-                    if result["valid"]:
-                        return True
+        if not piece["placed"] and next(
+            valid_placements_for_piece(game, player, piece),
+            None,
+        ) is not None:
+            return True
 
     return False
+
+
+def choose_random_bot_move(game, player, rng=random):
+    available_pieces = [
+        piece for piece in player["pieces"]
+        if not piece["placed"]
+    ]
+    rng.shuffle(available_pieces)
+
+    for piece in available_pieces:
+        selected_cells = None
+        placement_count = 0
+
+        for cells in valid_placements_for_piece(game, player, piece):
+            placement_count += 1
+            if rng.randrange(placement_count) == 0:
+                selected_cells = cells
+
+        if selected_cells is not None:
+            return {
+                "pieceName": piece["name"],
+                "cells": selected_cells,
+            }
+
+    return None
 
 
 def make_leaderboard(game):
@@ -387,54 +544,134 @@ def advance_turn(game):
             return
 
 
-def remove_player_from_game(game, player):
-    removed_index = game["players"].index(player)
-    was_finished = game["status"] == "finished"
-    current_player_id = None
-    next_player_id = None
-    if game["status"] == "playing" and game["players"]:
-        current_player_id = game["players"][game["currentTurnIndex"]]["id"]
-        next_player_id = game["players"][(removed_index + 1) % len(game["players"])]["id"]
+def apply_move(game, player, piece_name, cells):
+    game["board"].place_piece(
+        cells,
+        player=player["id"],
+        color=player["color"],
+        piece_id=f'{player["id"]}-{piece_name}',
+    )
 
-    for row in game["board"].grid:
-        for cell in row:
-            if cell.get("player") == player["id"]:
-                cell.clear()
-                cell.update({"occupied": False, "player": None, "pieceId": None})
+    piece = next(piece for piece in player["pieces"] if piece["name"] == piece_name)
+    piece["placed"] = True
+    game["moveHistory"].append({
+        "playerId": player["id"],
+        "pieceName": piece_name,
+        "cells": cells,
+    })
+    refresh_out_of_moves(game)
+    advance_turn(game)
 
-    game["players"].remove(player)
-    game["moveHistory"] = [
-        move for move in game["moveHistory"] if move["playerId"] != player["id"]
+
+async def run_bot_turn(game_id, expected_player_id):
+    current_task = asyncio.current_task()
+
+    try:
+        await asyncio.sleep(BOT_MOVE_DELAY_SECONDS)
+        game = games.get(game_id)
+
+        if (
+            not game
+            or game["status"] != "playing"
+            or not game["players"]
+        ):
+            return
+
+        player = game["players"][game["currentTurnIndex"]]
+        if player["id"] != expected_player_id or not player.get("isBot"):
+            return
+
+        move = choose_random_bot_move(game, player)
+        if move is None:
+            player["isOutOfMoves"] = True
+            game["notice"] = f'{player["name"]} ran out of moves.'
+            refresh_out_of_moves(game)
+            advance_turn(game)
+        else:
+            apply_move(game, player, move["pieceName"], move["cells"])
+
+        await broadcast_game(game_id)
+    finally:
+        if bot_tasks.get(game_id) is current_task:
+            bot_tasks.pop(game_id, None)
+
+    schedule_bot_turn(game_id)
+
+
+def schedule_bot_turn(game_id):
+    existing_task = bot_tasks.get(game_id)
+    if existing_task and not existing_task.done():
+        return
+
+    game = games.get(game_id)
+    if (
+        not game
+        or game["status"] != "playing"
+        or not game["players"]
+    ):
+        return
+
+    player = game["players"][game["currentTurnIndex"]]
+    if not player.get("isBot"):
+        return
+
+    bot_tasks[game_id] = asyncio.create_task(
+        run_bot_turn(game_id, player["id"])
+    )
+
+
+def convert_player_to_bot(game, player):
+    was_admin = game["adminPlayerId"] == player["id"]
+    settings_player = game["settings"]["players"][player["settingsPlayerKey"]]
+    settings_player["isBot"] = True
+    player["isBot"] = True
+    player["connected"] = True
+    player["token"] = None
+
+    remaining_humans = [
+        joined_player
+        for joined_player in game["players"]
+        if not joined_player.get("isBot")
     ]
 
-    if not game["players"]:
-        game["status"] = "waiting"
-        game["currentTurnIndex"] = 0
-        game["winnerId"] = None
-        game["leaderboard"] = []
-    elif was_finished:
+    if not remaining_humans:
         finish_game(game)
-    elif game["hasStarted"]:
-        game["status"] = "playing"
-        desired_player_id = next_player_id if current_player_id == player["id"] else current_player_id
-        game["currentTurnIndex"] = next(
-            (index for index, joined in enumerate(game["players"]) if joined["id"] == desired_player_id),
-            0,
+        game["adminPlayerId"] = None
+        game["notice"] = (
+            f'{player["name"]} left the game and became a bot. '
+            "The game ended because no human players remain."
         )
-        game["winnerId"] = None
-        game["leaderboard"] = []
+        task = bot_tasks.pop(game["gameId"], None)
+        if task and not task.done():
+            task.cancel()
+        return
 
-    game["notice"] = f'{player["name"]} left the game. Their pieces were removed.'
+    if was_admin:
+        new_admin = min(
+            remaining_humans,
+            key=lambda joined_player: joined_player["joinedOrder"],
+        )
+        game["adminPlayerId"] = new_admin["id"]
+        game["notice"] = (
+            f'{player["name"]} left the game and became a bot. '
+            f'{new_admin["name"]} is now the admin.'
+        )
+    else:
+        game["notice"] = f'{player["name"]} left the game and became a bot.'
 
 
 @app.post("/games")
-def create_game():
+def create_game(request: CreateGameRequest | None = None):
     game_id = f"{secrets.randbelow(1_000_000):06d}"
     while game_id in games:
         game_id = f"{secrets.randbelow(1_000_000):06d}"
-    games[game_id] = create_game_state(game_id)
+    settings = request.settings if request else GameSettingsRequest()
+    games[game_id] = create_game_state(game_id, settings)
     connections[game_id] = set()
-    return game_snapshot(games[game_id])
+    return {
+        **game_snapshot(games[game_id]),
+        "adminToken": games[game_id]["adminToken"],
+    }
 
 
 @app.get("/games/{game_id}")
@@ -445,6 +682,12 @@ def get_game_state(game_id: str):
 @app.post("/games/{game_id}/join")
 async def join_game(game_id: str, request: JoinRequest):
     game = get_game_or_404(game_id)
+
+    if request.adminToken:
+        if request.adminToken != game["adminToken"]:
+            raise HTTPException(status_code=403, detail="Invalid admin credentials.")
+        if game["adminPlayerId"] is not None:
+            raise HTTPException(status_code=409, detail="This game already has an admin.")
 
     if len(game["players"]) >= len(PLAYER_COLORS):
         raise HTTPException(status_code=409, detail="This game already has four players.")
@@ -460,22 +703,32 @@ async def join_game(game_id: str, request: JoinRequest):
 
     player_number = game["nextPlayerNumber"]
     game["nextPlayerNumber"] += 1
-    player = {
-        **seat,
-        "id": f"p{player_number}",
-        "token": secrets.token_urlsafe(16),
-        "pieces": make_piece_set(),
-        "connected": False,
-        "isOutOfMoves": False,
-    }
+    settings_player_key = next(
+        (
+            player_key
+            for player_key, player_settings in game["settings"]["players"].items()
+            if not player_settings["isBot"] and player_settings["color"] is None
+        ),
+        None,
+    )
+    if settings_player_key is None:
+        raise HTTPException(status_code=409, detail="All human player slots are filled.")
 
+    player = make_runtime_player(
+        seat,
+        player_number,
+        settings_player_key=settings_player_key,
+    )
     game["players"].append(player)
+    game["settings"]["players"][player["settingsPlayerKey"]]["color"] = player["name"]
 
-    if len(game["players"]) == len(PLAYER_COLORS):
-        game["status"] = "playing"
-        game["hasStarted"] = True
+    if request.adminToken:
+        game["adminPlayerId"] = player["id"]
+
+    start_game_if_ready(game)
 
     await broadcast_game(game_id)
+    schedule_bot_turn(game_id)
 
     return {
         "playerId": player["id"],
@@ -489,8 +742,9 @@ async def join_game(game_id: str, request: JoinRequest):
 async def quit_game(game_id: str, request: QuitRequest):
     game = get_game_or_404(game_id)
     player = authenticate_player(game, request.playerId, request.playerToken)
-    remove_player_from_game(game, player)
+    convert_player_to_bot(game, player)
     await broadcast_game(game_id)
+    schedule_bot_turn(game_id)
     return {"success": True}
 
 
@@ -522,6 +776,7 @@ async def restart_game(game_id: str, request: RestartRequest):
     game["notice"] = f'New game started. {first_player["name"]} goes first.'
 
     await broadcast_game(game_id)
+    schedule_bot_turn(game_id)
 
     return game_snapshot(game)
 
@@ -580,28 +835,12 @@ async def game_websocket(websocket: WebSocket, game_id: str, playerId: str, toke
                     })
                     continue
 
-                game["board"].place_piece(
-                    move.cells,
-                    player=player["id"],
-                    color=player["color"],
-                    piece_id=f'{player["id"]}-{move.pieceName}',
-                )
-
-                for piece in player["pieces"]:
-                    if piece["name"] == move.pieceName:
-                        piece["placed"] = True
-
-                game["moveHistory"].append({
-                    "playerId": player["id"],
-                    "pieceName": move.pieceName,
-                    "cells": move.cells,
-                })
-                refresh_out_of_moves(game)
-                advance_turn(game)
+                apply_move(game, player, move.pieceName, move.cells)
                 await broadcast_game(game_id)
+                schedule_bot_turn(game_id)
 
     except WebSocketDisconnect:
         connections[game_id].discard(websocket)
-        if player in game["players"]:
+        if player in game["players"] and not player.get("isBot"):
             player["connected"] = False
         await broadcast_game(game_id)

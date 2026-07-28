@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { GlobalStyles } from '@mui/material'
 import { globalGameStyles } from './gameStyles'
 import CreateGameScreen from './screens/CreateGameScreen'
+import GameSettingsScreen from './screens/GameSettingsScreen'
 import ChooseColorScreen from './screens/ChooseColorScreen'
 import GameScreen from './screens/GameScreen'
 
@@ -31,6 +32,7 @@ function App() {
 	const [path, setPath] = useState(window.location.pathname)
 	const [prefetchedGame, setPrefetchedGame] = useState(null)
 	const [playerSessionVersion, setPlayerSessionVersion] = useState(0)
+	const [isConfiguringGame, setIsConfiguringGame] = useState(false)
 	const route = getRouteFromPath(path)
 	const hasPlayerCredentials =
 		route.gameId && Boolean(getStoredPlayer(route.gameId))
@@ -53,10 +55,19 @@ function App() {
 	}
 
 	const handleEnterGame = gameOrGameId => {
+		setIsConfiguringGame(false)
+
 		if (typeof gameOrGameId === 'string') {
 			setPrefetchedGame(null)
 			navigateTo(`/game/${gameOrGameId}`)
 			return
+		}
+
+		if (gameOrGameId.adminToken) {
+			localStorage.setItem(
+				`blokus-admin-${gameOrGameId.gameId}`,
+				gameOrGameId.adminToken,
+			)
 		}
 
 		setPrefetchedGame(gameOrGameId)
@@ -75,7 +86,17 @@ function App() {
 		return (
 			<>
 				{globalStyles}
-				<CreateGameScreen onEnterGame={handleEnterGame} />
+				{isConfiguringGame ? (
+					<GameSettingsScreen
+						onCreateRoom={handleEnterGame}
+						onBack={() => setIsConfiguringGame(false)}
+					/>
+				) : (
+					<CreateGameScreen
+						onEnterGame={handleEnterGame}
+						onConfigureGame={() => setIsConfiguringGame(true)}
+					/>
+				)}
 			</>
 		)
 	}

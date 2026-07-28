@@ -1,15 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { makeStyles } from 'tss-react/mui'
 import clsx from 'clsx'
-import { createGame, wakeGameServer } from '../services/api'
+import { wakeGameServer } from '../services/api'
 import gameStyles from '../gameStyles'
 
 const useStyles = makeStyles()(gameStyles)
 
-function CreateGameScreen({ onEnterGame }) {
+function CreateGameScreen({ onEnterGame, onConfigureGame }) {
 	const { classes } = useStyles()
 
-	const [isCreating, setIsCreating] = useState(false)
 	const [inviteCode, setInviteCode] = useState('')
 	const [error, setError] = useState('')
 	const codeInputRefs = useRef([])
@@ -17,19 +16,6 @@ function CreateGameScreen({ onEnterGame }) {
 	useEffect(() => {
 		wakeGameServer().catch(() => {})
 	}, [])
-
-	const handleCreateGame = async () => {
-		setIsCreating(true)
-		setError('')
-
-		try {
-			const game = await createGame()
-			onEnterGame(game)
-		} catch (err) {
-			setError(err.message)
-			setIsCreating(false)
-		}
-	}
 
 	const handleJoinGame = event => {
 		event.preventDefault()
@@ -97,8 +83,8 @@ function CreateGameScreen({ onEnterGame }) {
 
 				<p>Create a new room or join friends with their 6 digit invite code.</p>
 
-				<button onClick={handleCreateGame} disabled={isCreating}>
-					{isCreating ? 'Starting game server...' : 'Create Game'}
+				<button onClick={onConfigureGame}>
+					Create Game
 				</button>
 
 				<div className={classes.startDivider}>

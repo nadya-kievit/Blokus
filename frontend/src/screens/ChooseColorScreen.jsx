@@ -11,6 +11,7 @@ function ChooseColorScreen({ gameId, initialGame, onJoined, onBack }) {
 	const { classes } = useStyles()
 
 	const storageKey = `blokus-player-${gameId}`
+	const adminToken = localStorage.getItem(`blokus-admin-${gameId}`)
 
 	const [game, setGame] = useState(initialGame)
 	const [isJoining, setIsJoining] = useState(false)
@@ -47,7 +48,7 @@ function ChooseColorScreen({ gameId, initialGame, onJoined, onBack }) {
 		setLastMessage('')
 
 		try {
-			const player = await joinGame(gameId, color)
+			const player = await joinGame(gameId, color, adminToken)
 
 			localStorage.setItem(storageKey, JSON.stringify(player))
 			onJoined()

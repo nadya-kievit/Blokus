@@ -11,7 +11,6 @@ import Piece, { CursorPiece } from '../components/Piece'
 const useStyles = makeStyles()(gameStyles)
 
 const BOARD_SIZE = 20
-const REQUIRED_PLAYERS = 4
 const PLAYER_SEATS = [
 	{ name: 'Red', color: '#e34242' },
 	{ name: 'Blue', color: '#0077ee' },
@@ -197,12 +196,26 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 
 	const leaderboard = game?.leaderboard || []
 
-	const joinedPlayerNames = useMemo(() => 
-		new Set((game?.players || []).map(player => player.name)),
-		[game]
-	)
-
 	const readyCount = game?.players.length || 0
+	const readySlots = useMemo(() => {
+		const configuredPlayers = Object.entries(game?.settings?.players || {})
+			.filter(([, player]) => !player.isBot)
+
+		if (!configuredPlayers.length) {
+			return PLAYER_SEATS.map(seat => ({
+				key: seat.name,
+				color: game?.players.some(player => player.name === seat.name)
+					? seat.color
+					: null,
+			}))
+		}
+
+		return configuredPlayers.map(([key, player]) => ({
+			key,
+			color: PLAYER_SEATS.find(seat => seat.name === player.color)?.color || null,
+		}))
+	}, [game])
+	const requiredPlayers = readySlots.length
 	const isWaitingForPlayers = game?.status === 'waiting'
 
 	const playerProgress = useMemo(() => {
@@ -594,6 +607,10 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 			document.body
 		)}
 		<div className={classes.gamePage}>
+			{isWaitingForPlayers && (
+				<div className={classes.waitingGameVeil} aria-hidden="true" />
+			)}
+
 			<header className={classes.gameHeader}>
 				<div className={classes.gameBrand}>
 					<h1 className={clsx(classes.gameTitle, classes.gameHeaderTitle)}>
@@ -640,12 +657,6 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 					</button>
 				</div>
 			</header>
-
-			{lastMessage && (
-				<div className={classes.statusMessage}>
-					{lastMessage}
-				</div>
-			)}
 
 			<div className={classes.gameMain}>
 				<aside className={classes.playersLeftPanel}>
@@ -743,7 +754,12 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 					</div>
 				</aside>
 
-				<div className={classes.boardCenter}>
+				<div
+					className={clsx(
+						classes.boardCenter,
+						isWaitingForPlayers && classes.boardCenterWaiting,
+					)}
+				>
 					<div className={classes.turnBannerSlot}>
 						<AnimatePresence mode="wait" initial={false}>
 							{(game?.status === 'playing' || isFinished) && (
@@ -768,12 +784,6 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 									{isFinished
 										? `${winner?.name || 'A player'} won!`
 										: canMove ? 'Your Turn!' : currentPlayer?.name + '\'s Turn'}
-								</div>
-
-								<div className={classes.turnSubtitle}>
-									{isFinished
-										? 'Game finished'
-										: canMove ? 'Place a piece on the board' : 'Waiting...'}
 								</div>
 							</div>
 
@@ -816,48 +826,43 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 										viewBox="0 0 220 220"
 										aria-hidden="true"
 									>
-										{PLAYER_SEATS.map((seat, index) => {
-											const isReady = joinedPlayerNames.has(seat.name)
-
-											const arcPaths = [
-												'M 110 20 A 90 90 0 0 1 200 110',
-												'M 200 110 A 90 90 0 0 1 110 200',
-												'M 110 200 A 90 90 0 0 1 20 110',
-												'M 20 110 A 90 90 0 0 1 110 20',
-											]
+										{readySlots.map((slot, index) => {
+											const circumference = 2 * Math.PI * 90
+											const gap = 10
+											const segmentLength = circumference / requiredPlayers - gap
+											const rotation = -90 + index * (360 / requiredPlayers)
 
 											return (
-												<path
-													key={seat.name}
-													d={arcPaths[index]}
+												<circle
+													key={slot.key}
+													cx="110"
+													cy="110"
+													r="90"
 													className={classes.readyArc}
+													strokeDasharray={`${segmentLength} ${circumference - segmentLength}`}
+													transform={`rotate(${rotation} 110 110)`}
 													style={{
-														'--seat-color': isReady ? seat.color : '#40374e',
+														'--seat-color': slot.color || '#40374e',
 													}}
 												/>
 											)
 										})}
 
-										{PLAYER_SEATS.map((seat, index) => {
-											const isReady = joinedPlayerNames.has(seat.name)
-
-											const dotPositions = [
-												{ cx: 110, cy: 20 },
-												{ cx: 200, cy: 110 },
-												{ cx: 110, cy: 200 },
-												{ cx: 20, cy: 110 },
-											]
+										{readySlots.map((slot, index) => {
+											const angle = (
+												-90 + (index + 0.5) * (360 / requiredPlayers)
+											) * Math.PI / 180
 
 											return (
 												<circle
-													key={`${seat.name}-dot`}
-													cx={dotPositions[index].cx}
-													cy={dotPositions[index].cy}
+													key={`${slot.key}-dot`}
+													cx={110 + 90 * Math.cos(angle)}
+													cy={110 + 90 * Math.sin(angle)}
 													r="12"
 													className={clsx(classes.readySeatDot, {
-														[classes.readySeatDotFilled]: isReady,
+														[classes.readySeatDotFilled]: Boolean(slot.color),
 													})}
-													style={{ '--seat-color': seat.color }}
+													style={{ '--seat-color': slot.color || '#40374e' }}
 												/>
 											)
 										})}
@@ -866,7 +871,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 									<div className={classes.readyContent}>
 
 										<div className={classes.readyCount}>
-											{readyCount} of {REQUIRED_PLAYERS}
+											{readyCount} of {requiredPlayers}
 										</div>
 
 										<div className={classes.readyLabel}>players ready</div>
@@ -928,6 +933,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 							<Piece
 								classes={classes}
 								piece={piece}
+								isWaitingForPlayers={isWaitingForPlayers}
 								placed={piece.placed}
 								color={me?.color}
 								isSelected={selectedPieceName === piece.name}
@@ -972,26 +978,6 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 							))}
 						</div>
 					</div>
-
-					{isWaitingForPlayers && (
-						<div className={classes.piecePanelLockOverlay}>
-							<div className={classes.piecePanelLockIcon} aria-hidden="true">
-								<svg viewBox="0 0 24 24">
-									<rect x="5" y="10" width="14" height="10" rx="2" />
-									<path d="M8 10V7a4 4 0 0 1 8 0v3" />
-									<path d="M12 14v3" />
-								</svg>
-							</div>
-
-							<div className={classes.piecePanelLockMessage}>
-								Waiting for all players
-								<br />
-								to join before pieces
-								<br />
-								can be placed
-							</div>
-						</div>
-					)}
 				</div>
 			</div>
 

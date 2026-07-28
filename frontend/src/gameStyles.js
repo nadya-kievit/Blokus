@@ -77,6 +77,20 @@ const gameStyles = () => ({
 		gap: 12,
 	},
 
+	boardCenterWaiting: {
+		zIndex: 5,
+	},
+
+	waitingGameVeil: {
+		position: 'fixed',
+		inset: 0,
+		zIndex: 4,
+		background: 'rgba(8, 4, 14, 0.32)',
+		backdropFilter: 'blur(1px)',
+		WebkitBackdropFilter: 'blur(1px)',
+		pointerEvents: 'none',
+	},
+
 	piecesRight: {
 		position: 'absolute',
 		right: 32,
@@ -453,6 +467,144 @@ const gameStyles = () => ({
 		flexWrap: 'nowrap',
 	},
 
+	settingsPanel: {
+		width: 700,
+		maxWidth: 'calc(100vw - 32px)',
+		padding: '34px 36px 30px',
+		textAlign: 'left',
+
+		'& > h2, & > p': {
+			textAlign: 'center',
+		},
+	},
+
+	settingsSection: {
+		padding: '22px 10px 24px',
+		borderTop: '1px solid rgba(155, 113, 211, 0.24)',
+
+		'& h3': {
+			margin: '0 0 15px',
+			color: '#f2eeff',
+			fontSize: 17,
+			fontWeight: 800,
+		},
+	},
+
+	timeLimitOptions: {
+		display: 'grid',
+		gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+		gap: 14,
+	},
+
+	settingsOption: {
+		minHeight: 48,
+		color: '#a9a0bd',
+		boxShadow: 'none',
+	},
+
+	settingsOptionSelected: {
+		borderColor: 'rgba(169, 108, 255, 0.82) !important',
+		background: 'rgba(90, 47, 126, 0.54) !important',
+		color: '#ffffff !important',
+		boxShadow: 'none !important',
+	},
+
+	playerTypeList: {
+		display: 'flex',
+		flexDirection: 'column',
+		gap: 8,
+	},
+
+	playerTypeRow: {
+		minHeight: 54,
+		display: 'flex',
+		alignItems: 'center',
+		justifyContent: 'space-between',
+		gap: 20,
+		padding: '4px 6px 4px 14px',
+		boxSizing: 'border-box',
+		border: '1px solid rgba(155, 113, 211, 0.2)',
+		borderRadius: 8,
+		background: 'rgba(19, 12, 30, 0.58)',
+	},
+
+	settingsPlayerName: {
+		display: 'flex',
+		alignItems: 'center',
+		color: '#f2eeff',
+		fontSize: 16,
+		fontWeight: 800,
+	},
+
+	playerTypeToggle: {
+		position: 'relative',
+		display: 'grid',
+		gridTemplateColumns: 'repeat(2, 1fr)',
+		width: 232,
+		minHeight: 42,
+		padding: 3,
+		borderRadius: 7,
+		background: 'rgba(17, 10, 27, 0.82)',
+		boxShadow: 'none',
+		overflow: 'hidden',
+
+		'& span': {
+			position: 'relative',
+			zIndex: 2,
+			display: 'flex',
+			alignItems: 'center',
+			justifyContent: 'center',
+			color: '#a9a0bd',
+			transition: 'color 160ms ease',
+		},
+
+		'& span:first-of-type': {
+			color: '#ffffff',
+		},
+
+		'& i': {
+			position: 'absolute',
+			zIndex: 1,
+			top: 3,
+			bottom: 3,
+			left: 3,
+			width: 'calc(50% - 3px)',
+			border: '1px solid rgba(169, 108, 255, 0.72)',
+			borderRadius: 5,
+			boxSizing: 'border-box',
+			background: 'rgba(90, 47, 126, 0.54)',
+			transition: 'transform 160ms ease',
+		},
+	},
+
+	playerTypeToggleBot: {
+		'& span:first-of-type': {
+			color: '#a9a0bd',
+		},
+
+		'& span:nth-of-type(2)': {
+			color: '#ffffff',
+		},
+
+		'& i': {
+			transform: 'translateX(100%)',
+		},
+	},
+
+	settingsActions: {
+		display: 'flex',
+		alignItems: 'center',
+		justifyContent: 'center',
+		gap: 32,
+		paddingTop: 24,
+		borderTop: '1px solid rgba(155, 113, 211, 0.24)',
+
+		'& button': {
+			minWidth: 155,
+			minHeight: 48,
+		},
+	},
+
 	textButton: {
 		background: 'transparent',
 		boxShadow: 'none',
@@ -754,14 +906,6 @@ const gameStyles = () => ({
 		lineHeight: 1.08,
 	},
 
-	turnSubtitle: {
-		marginTop: 4,
-		color: '#c5bddb',
-		fontSize: 13,
-		fontWeight: 700,
-		lineHeight: 1.15,
-	},
-
 	statusMessage: {
 		position: 'absolute',
 		left: '50%',
@@ -1039,6 +1183,19 @@ const gameStyles = () => ({
 		},
 	},
 
+	pieceCardNoHover: {
+		position: 'relative',
+		width: 86,
+		height: 86,
+		boxSizing: 'border-box',
+		border: '1px solid rgba(147, 121, 181, 0.34)',
+		borderRadius: 9,
+		background: 'rgba(19, 12, 30, 0.78)',
+		boxShadow: '0 5px 14px rgba(3, 1, 9, 0.3)',
+		cursor: 'pointer',
+		transition: 'transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease'
+	},
+
 	selected: {
 		borderColor: 'rgba(169, 108, 255, 0.8)',
 		boxShadow: '0 0 0 2px rgba(169, 108, 255, 0.2), 0 7px 18px rgba(3, 1, 9, 0.36)',
@@ -1214,15 +1371,9 @@ const gameStyles = () => ({
 		alignItems: 'center',
 		justifyContent: 'center',
 		borderRadius: 18,
-		background: `
-			linear-gradient(
-				rgba(222, 240, 255, 0.48),
-				rgba(205, 229, 249, 0.58)
-			)
-		`,
+		background: 'rgba(8, 4, 14, 0.32)',
 		backdropFilter: 'blur(1px)',
 		WebkitBackdropFilter: 'blur(1px)',
-		pointerEvents: 'auto',
 	},
 
 	readyDial: {
@@ -1233,12 +1384,8 @@ const gameStyles = () => ({
 		alignItems: 'center',
 		justifyContent: 'center',
 		borderRadius: '50%',
+		border: '1px solid rgba(7, 2, 5, 0.9)',
 		background: 'rgba(24, 16, 37, 0.9)',
-		boxShadow: `
-			0 18px 45px rgba(60, 139, 242, 0.2),
-			inset 0 0 0 1px rgba(255, 255, 255, 0.9)
-		`,
-		backdropFilter: 'blur(8px)',
 
 		// remove old dotted pseudo ring
 		'&::before': {

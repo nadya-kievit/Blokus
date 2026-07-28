@@ -87,17 +87,7 @@ function PieceBagButton({
 			>
 				<defs>
 					<clipPath id={`bag-shape-${name}`}>
-						<path d="
-							M20 12
-							C42 8, 66 13, 88 10
-							C116 6, 142 10, 162 15
-							L166 222
-							C130 226, 96 219, 62 224
-							C42 227, 26 223, 15 218
-							L18 150
-							C10 130, 15 107, 18 86
-							Z
-						" />
+						<rect x="15" y="10" width="150" height="215" />
 					</clipPath>
 
 					<linearGradient id={`bag-bg-${name}`} x1="0" y1="0" x2="1" y2="1">
@@ -123,7 +113,6 @@ function PieceBagButton({
 							y={cell.y}
 							width={cellSize}
 							height={cellSize}
-							rx="1.5"
 							fill={cell.isBlank ? '#dff4d9' : color}
 							opacity={cell.isBlank ? 0.75 : 1}
 						/>
@@ -139,47 +128,11 @@ function PieceBagButton({
 						transform="rotate(8 90 117)"
 					/>
 
-					<path
-						d="M42 30 C50 70, 34 95, 46 132 C54 158, 42 180, 50 218"
-						fill="none"
-						stroke="rgba(255,255,255,0.42)"
-						strokeWidth="3"
-					/>
-
-					<path
-						d="M138 16 C132 58, 150 84, 138 124 C130 153, 148 184, 140 226"
-						fill="none"
-						stroke="rgba(0,0,0,0.08)"
-						strokeWidth="3"
-					/>
-
-					<text
-						x="90"
-						y="130"
-						textAnchor="middle"
-						dominantBaseline="middle"
-						transform="rotate(-90 90 130)"
-						fontFamily="Arial Black, Impact, sans-serif"
-						fontSize="43"
-						fill="white"
-						stroke={color}
-						strokeWidth="5"
-						paintOrder="stroke"
-						letterSpacing="1"
-					>
-						Blokus
-					</text>
-
-					<path
-						d="M20 12
-						C42 8, 66 13, 88 10
-						C116 6, 142 10, 162 15
-						L166 222
-						C130 226, 96 219, 62 224
-						C42 227, 26 223, 15 218
-						L18 150
-						C10 130, 15 107, 18 86
-						Z"
+					<rect
+						x="15"
+						y="10"
+						width="150"
+						height="215"
 						fill="none"
 						stroke="rgba(255,255,255,0.65)"
 						strokeWidth="2"

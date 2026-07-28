@@ -22,9 +22,11 @@ async function parseResponse(response) {
   return data
 }
 
-export async function createGame() {
+export async function createGame(settings) {
   const response = await fetch(`${API_BASE}/games`, {
-    method: 'POST'
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ settings })
   })
 
   return parseResponse(response)
@@ -36,11 +38,11 @@ export async function getGame(gameId) {
   return parseResponse(response)
 }
 
-export async function joinGame(gameId, color) {
+export async function joinGame(gameId, color, adminToken) {
   const response = await fetch(`${API_BASE}/games/${gameId}/join`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ color })
+    body: JSON.stringify({ color, adminToken })
   })
 
   return parseResponse(response)

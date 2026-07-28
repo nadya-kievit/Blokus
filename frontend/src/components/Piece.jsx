@@ -79,7 +79,7 @@ export function CursorPiece({ piece, rotation, flipped, color, cursorRef, positi
     )
 }
 
-function Piece({ piece, placed, isSelected, onClick, rotation, flipped, color, classes }) {
+function Piece({ piece, isWaitingForPlayers, placed, isSelected, onClick, rotation, flipped, color, classes }) {
 
     const size = 13
     const cardSize = 72
@@ -117,7 +117,7 @@ function Piece({ piece, placed, isSelected, onClick, rotation, flipped, color, c
     const offsetLeft = (cardSize - pieceWidth) / 2
 
     return (
-        <div className={clsx(classes.pieceCard, placed && classes.placed, isSelected && classes.selected)} onClick={onClick}>
+        <div className={clsx(isWaitingForPlayers && classes.pieceCardNoHover, !isWaitingForPlayers && classes.pieceCard, placed && classes.placed, isSelected && classes.selected)} onClick={onClick}>
 
         {rotatedCells.map((cell, index) => {
 
