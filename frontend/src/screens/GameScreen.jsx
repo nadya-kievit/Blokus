@@ -157,6 +157,31 @@ function TurnTimer({ endsAt, className }) {
 }
 
 
+function PersonIcon() {
+	return (
+		<svg viewBox="0 0 24 24">
+			<circle cx="12" cy="8" r="4" />
+			<path d="M5.5 20a6.5 6.5 0 0 1 13 0" />
+		</svg>
+	)
+}
+
+
+function RobotIcon() {
+	return (
+		<svg viewBox="0 0 24 24">
+			<path d="M12 5V3" fill="none" />
+			<circle cx="12" cy="2.25" r="1.25" stroke="none" />
+			<rect x="5" y="6" width="14" height="13" rx="3" fill="none" />
+			<path d="M5 10H4a2.5 2.5 0 0 0 0 5h1M19 10h1a2.5 2.5 0 0 1 0 5h-1" fill="none" />
+			<circle cx="9" cy="11.5" r="1.3" stroke="none" />
+			<circle cx="15" cy="11.5" r="1.3" stroke="none" />
+			<path d="M9.5 16h5" fill="none" />
+		</svg>
+	)
+}
+
+
 function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 	const { classes } = useStyles()
 
@@ -222,6 +247,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 		game?.players.find(player => player.id === game?.winnerId),
 		[game]
 	)
+	const turnPlayer = isFinished ? winner : currentPlayer
 
 	const leaderboard = game?.leaderboard || []
 
@@ -802,10 +828,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 									transition={{ duration: 0.18, ease: 'easeOut' }}
 								>
 							<div className={classes.turnAvatar} aria-hidden="true">
-								<svg viewBox="0 0 24 24">
-									<circle cx="12" cy="8" r="4" />
-									<path d="M5.5 20a6.5 6.5 0 0 1 13 0" />
-								</svg>
+								{turnPlayer?.isBot ? <RobotIcon /> : <PersonIcon />}
 							</div>
 
 							<div className={classes.turnText}>
