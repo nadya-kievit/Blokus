@@ -128,6 +128,35 @@ function isValidPlacement(board, cells, player, isFirstMove) {
 }
 
 
+function secondsUntil(timestamp) {
+	return Math.max(0, Math.ceil((timestamp - Date.now()) / 1000))
+}
+
+
+function TurnTimer({ endsAt, className }) {
+	const [remainingSeconds, setRemainingSeconds] = useState(() => secondsUntil(endsAt))
+
+	useEffect(() => {
+		const intervalId = window.setInterval(() => {
+			const nextRemainingSeconds = secondsUntil(endsAt)
+
+			setRemainingSeconds(currentSeconds =>
+				currentSeconds === nextRemainingSeconds ? currentSeconds : nextRemainingSeconds
+			)
+		}, 250)
+
+		return () => window.clearInterval(intervalId)
+	}, [endsAt])
+
+	return (
+		<div className={className}>
+			{Math.floor(remainingSeconds / 60)}:
+			{String(remainingSeconds % 60).padStart(2, '0')}
+		</div>
+	)
+}
+
+
 function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 	const { classes } = useStyles()
 
@@ -785,6 +814,13 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 										? `${winner?.name || 'A player'} won!`
 										: canMove ? 'Your Turn!' : currentPlayer?.name + '\'s Turn'}
 								</div>
+								{game?.turnEndsAt != null && (
+									<TurnTimer
+										key={game.turnNumber}
+										endsAt={game.turnEndsAt}
+										className={classes.turnTimer}
+									/>
+								)}
 							</div>
 
 							{isFinished && (

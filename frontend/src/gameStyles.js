@@ -906,6 +906,15 @@ const gameStyles = () => ({
 		lineHeight: 1.08,
 	},
 
+	turnTimer: {
+		marginTop: 3,
+		color: 'rgba(246, 242, 255, 0.78)',
+		fontSize: 13,
+		fontVariantNumeric: 'tabular-nums',
+		fontWeight: 750,
+		lineHeight: 1,
+	},
+
 	statusMessage: {
 		position: 'absolute',
 		left: '50%',

@@ -2,6 +2,7 @@ import asyncio
 from copy import deepcopy
 import random
 import secrets
+import time
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -55,7 +56,7 @@ PLAYER_COLORS = [
 
 games = {}
 connections = {}
-bot_tasks = {}
+turn_tasks = {}
 
 BOT_MOVE_DELAY_SECONDS = 2
 
@@ -159,6 +160,8 @@ def create_game_state(game_id, settings):
         "board": Board(),
         "players": [],
         "currentTurnIndex": 0,
+        "turnNumber": 0,
+        "turnEndsAt": None,
         "moveHistory": [],
         "status": "waiting",
         "hasStarted": False,
@@ -197,6 +200,8 @@ def game_snapshot(game):
         "board": game["board"].get_grid(),
         "players": [public_player(player) for player in game["players"]],
         "currentPlayerId": current_player_id,
+        "turnNumber": game["turnNumber"],
+        "turnEndsAt": game["turnEndsAt"],
         "moveHistory": game["moveHistory"],
         "status": game["status"],
         "winnerId": game["winnerId"],
@@ -289,6 +294,7 @@ def start_game_if_ready(game):
     game["status"] = "playing"
     game["hasStarted"] = True
     game["notice"] = f'{game["players"][0]["name"]} goes first.'
+    start_current_turn(game)
     return True
 
 
@@ -311,6 +317,12 @@ def validate_player_move(game, player, move):
         return {
             "valid": False,
             "reason": "It is not your turn.",
+        }
+
+    if game["turnEndsAt"] is not None and time.time() * 1000 >= game["turnEndsAt"]:
+        return {
+            "valid": False,
+            "reason": "Your turn time has expired.",
         }
 
     piece = next(
@@ -434,7 +446,7 @@ def can_player_move(game, player):
     return False
 
 
-def choose_random_bot_move(game, player, rng=random):
+def choose_automatic_move(game, player, rng=random):
     available_pieces = [
         piece for piece in player["pieces"]
         if not piece["placed"]
@@ -459,6 +471,10 @@ def choose_random_bot_move(game, player, rng=random):
     return None
 
 
+def choose_random_bot_move(game, player, rng=random):
+    return choose_automatic_move(game, player, rng)
+
+
 def make_leaderboard(game):
     leaderboard = [
         {
@@ -481,6 +497,7 @@ def finish_game(game):
     game["winnerId"] = winner["playerId"] if winner else None
     game["leaderboard"] = leaderboard
     game["currentTurnIndex"] = 0
+    game["turnEndsAt"] = None
     if winner:
         game["notice"] = f'Game over. {winner["name"]} won with {winner["blocksPlaced"]} blocks.'
     else:
@@ -541,10 +558,30 @@ def advance_turn(game):
 
         if not game["players"][next_index].get("isOutOfMoves"):
             game["currentTurnIndex"] = next_index
+            start_current_turn(game)
             return
 
 
-def apply_move(game, player, piece_name, cells):
+def start_current_turn(game):
+    existing_task = turn_tasks.pop(game["gameId"], None)
+    if existing_task and not existing_task.done():
+        try:
+            current_task = asyncio.current_task()
+        except RuntimeError:
+            current_task = None
+        if existing_task is not current_task:
+            existing_task.cancel()
+
+    game["turnNumber"] += 1
+    time_limit = game["settings"]["moveTimeLimitSeconds"]
+    game["turnEndsAt"] = (
+        time.time() * 1000 + time_limit * 1000
+        if game["status"] == "playing" and time_limit is not None
+        else None
+    )
+
+
+def apply_move(game, player, piece_name, cells, source="human"):
     game["board"].place_piece(
         cells,
         player=player["id"],
@@ -558,16 +595,23 @@ def apply_move(game, player, piece_name, cells):
         "playerId": player["id"],
         "pieceName": piece_name,
         "cells": cells,
+        "source": source,
     })
     refresh_out_of_moves(game)
     advance_turn(game)
 
 
-async def run_bot_turn(game_id, expected_player_id):
+async def run_automatic_turn(
+    game_id,
+    expected_player_id,
+    expected_turn_number,
+    delay_seconds,
+    source,
+):
     current_task = asyncio.current_task()
 
     try:
-        await asyncio.sleep(BOT_MOVE_DELAY_SECONDS)
+        await asyncio.sleep(delay_seconds)
         game = games.get(game_id)
 
         if (
@@ -578,28 +622,51 @@ async def run_bot_turn(game_id, expected_player_id):
             return
 
         player = game["players"][game["currentTurnIndex"]]
-        if player["id"] != expected_player_id or not player.get("isBot"):
+        if (
+            player["id"] != expected_player_id
+            or game["turnNumber"] != expected_turn_number
+            or (source == "bot" and not player.get("isBot"))
+            or (source == "timeout" and player.get("isBot"))
+        ):
             return
 
-        move = choose_random_bot_move(game, player)
+        move = choose_automatic_move(game, player)
         if move is None:
             player["isOutOfMoves"] = True
             game["notice"] = f'{player["name"]} ran out of moves.'
             refresh_out_of_moves(game)
             advance_turn(game)
         else:
-            apply_move(game, player, move["pieceName"], move["cells"])
+            apply_move(game, player, move["pieceName"], move["cells"], source=source)
+            if source == "timeout" and game["status"] == "playing":
+                game["notice"] = (
+                    f'{player["name"]} ran out of time. '
+                    "A piece was placed automatically."
+                )
 
         await broadcast_game(game_id)
     finally:
-        if bot_tasks.get(game_id) is current_task:
-            bot_tasks.pop(game_id, None)
+        if turn_tasks.get(game_id) is current_task:
+            turn_tasks.pop(game_id, None)
 
-    schedule_bot_turn(game_id)
+    schedule_turn(game_id)
 
 
-def schedule_bot_turn(game_id):
-    existing_task = bot_tasks.get(game_id)
+async def run_bot_turn(game_id, expected_player_id):
+    game = games.get(game_id)
+    if not game:
+        return
+    await run_automatic_turn(
+        game_id,
+        expected_player_id,
+        game["turnNumber"],
+        BOT_MOVE_DELAY_SECONDS,
+        "bot",
+    )
+
+
+def schedule_turn(game_id):
+    existing_task = turn_tasks.get(game_id)
     if existing_task and not existing_task.done():
         return
 
@@ -612,11 +679,23 @@ def schedule_bot_turn(game_id):
         return
 
     player = game["players"][game["currentTurnIndex"]]
-    if not player.get("isBot"):
+    if player.get("isBot"):
+        delay_seconds = BOT_MOVE_DELAY_SECONDS
+        source = "bot"
+    elif game["turnEndsAt"] is not None:
+        delay_seconds = max(0, (game["turnEndsAt"] - time.time() * 1000) / 1000)
+        source = "timeout"
+    else:
         return
 
-    bot_tasks[game_id] = asyncio.create_task(
-        run_bot_turn(game_id, player["id"])
+    turn_tasks[game_id] = asyncio.create_task(
+        run_automatic_turn(
+            game_id,
+            player["id"],
+            game["turnNumber"],
+            delay_seconds,
+            source,
+        )
     )
 
 
@@ -641,7 +720,7 @@ def convert_player_to_bot(game, player):
             f'{player["name"]} left the game and became a bot. '
             "The game ended because no human players remain."
         )
-        task = bot_tasks.pop(game["gameId"], None)
+        task = turn_tasks.pop(game["gameId"], None)
         if task and not task.done():
             task.cancel()
         return
@@ -728,7 +807,7 @@ async def join_game(game_id: str, request: JoinRequest):
     start_game_if_ready(game)
 
     await broadcast_game(game_id)
-    schedule_bot_turn(game_id)
+    schedule_turn(game_id)
 
     return {
         "playerId": player["id"],
@@ -744,7 +823,7 @@ async def quit_game(game_id: str, request: QuitRequest):
     player = authenticate_player(game, request.playerId, request.playerToken)
     convert_player_to_bot(game, player)
     await broadcast_game(game_id)
-    schedule_bot_turn(game_id)
+    schedule_turn(game_id)
     return {"success": True}
 
 
@@ -774,9 +853,10 @@ async def restart_game(game_id: str, request: RestartRequest):
     )
     first_player = game["players"][game["currentTurnIndex"]]
     game["notice"] = f'New game started. {first_player["name"]} goes first.'
+    start_current_turn(game)
 
     await broadcast_game(game_id)
-    schedule_bot_turn(game_id)
+    schedule_turn(game_id)
 
     return game_snapshot(game)
 
@@ -837,7 +917,7 @@ async def game_websocket(websocket: WebSocket, game_id: str, playerId: str, toke
 
                 apply_move(game, player, move.pieceName, move.cells)
                 await broadcast_game(game_id)
-                schedule_bot_turn(game_id)
+                schedule_turn(game_id)
 
     except WebSocketDisconnect:
         connections[game_id].discard(websocket)

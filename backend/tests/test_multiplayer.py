@@ -19,9 +19,9 @@ client = TestClient(app)
 
 
 def setup_function():
-    for task in main_module.bot_tasks.values():
+    for task in main_module.turn_tasks.values():
         task.cancel()
-    main_module.bot_tasks.clear()
+    main_module.turn_tasks.clear()
     games.clear()
 
 
@@ -308,6 +308,81 @@ def test_bot_turn_waits_then_places_a_piece(monkeypatch):
 
     assert game["moveHistory"]
     assert game["moveHistory"][0]["playerId"] == bot["id"]
+
+
+def test_timed_out_human_gets_an_automatic_move_and_a_new_turn_starts():
+    created_game = client.post(
+        "/games",
+        json={"settings": {"moveTimeLimitSeconds": 30}},
+    ).json()
+    game_id = created_game["gameId"]
+    players = [
+        client.post(f"/games/{game_id}/join", json={"color": color}).json()
+        for color in ["Blue", "Red", "Green", "Yellow"]
+    ]
+    game = games[game_id]
+    timed_out_player = game["players"][game["currentTurnIndex"]]
+    expired_turn_number = game["turnNumber"]
+
+    task = main_module.turn_tasks.pop(game_id, None)
+    if task and not task.done():
+        task.cancel()
+
+    asyncio.run(main_module.run_automatic_turn(
+        game_id,
+        timed_out_player["id"],
+        expired_turn_number,
+        0,
+        "timeout",
+    ))
+
+    assert game["moveHistory"][0]["playerId"] == players[0]["playerId"]
+    assert game["moveHistory"][0]["source"] == "timeout"
+    assert timed_out_player["isBot"] is False
+    assert game["currentTurnIndex"] == 1
+    assert game["turnNumber"] == expired_turn_number + 1
+    assert game["turnEndsAt"] is not None
+    assert "ran out of time" in game["notice"]
+
+
+def test_stale_timeout_cannot_place_during_a_later_turn():
+    game_id, _ = create_joined_game()
+    game = games[game_id]
+    player = game["players"][0]
+    stale_turn_number = game["turnNumber"]
+    main_module.advance_turn(game)
+
+    asyncio.run(main_module.run_automatic_turn(
+        game_id,
+        player["id"],
+        stale_turn_number,
+        0,
+        "timeout",
+    ))
+
+    assert game["moveHistory"] == []
+
+
+def test_move_is_rejected_after_the_server_deadline():
+    game_id, players = create_joined_game()
+    game = games[game_id]
+    game["turnEndsAt"] = 0
+
+    result = validate_player_move(
+        game,
+        game["players"][0],
+        MoveRequest(
+            cells=[{"row": 0, "col": 0}],
+            pieceName="I1",
+            playerId=players[0]["playerId"],
+            playerToken=players[0]["playerToken"],
+        ),
+    )
+
+    assert result == {
+        "valid": False,
+        "reason": "Your turn time has expired.",
+    }
 
 
 def test_human_converted_before_start_is_not_duplicated_as_a_bot():
