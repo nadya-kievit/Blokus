@@ -1,16 +1,16 @@
 import clsx from 'clsx'
+import { makeStyles } from 'tss-react/mui'
+import gameStyles from '../gameStyles'
 
-function Tile({value, row, col, viewRow, viewCol, onClick, onHover, isHovered, neighbors, hoverNeighbors, classes}) {
+const useStyles = makeStyles()(gameStyles)
 
-	const handleClick = () => {
-		onClick(row, col, viewRow, viewCol)
-	}
+function Tile({value, row, col, viewRow, viewCol, onClick, onHover, isHovered, neighbors, hoverNeighbors}) {
+	const { classes } = useStyles()
 
 	const isOccupied = value.occupied
 	const occupiedColor = value.color || '#0077ee'
-
-	const belongsToSamePiece = neighbor =>
-		isOccupied && value.pieceId && neighbor?.pieceId === value.pieceId
+	const handleClick = () => { onClick(row, col, viewRow, viewCol) }
+	const belongsToSamePiece = neighbor => isOccupied && value.pieceId && neighbor?.pieceId === value.pieceId
 
 	const shouldRemoveTopBorder = belongsToSamePiece(neighbors.top) || (isHovered && hoverNeighbors?.top)
 	const shouldRemoveBottomBorder = belongsToSamePiece(neighbors.bottom) || (isHovered && hoverNeighbors?.bottom)
@@ -21,18 +21,16 @@ function Tile({value, row, col, viewRow, viewCol, onClick, onHover, isHovered, n
 	const outerBorderWidth = 1
 	const innerBorderWidth = isHovered ? 0 : 1
 
+
 	return (
 		<div
 			className={clsx(classes.tile, (isOccupied) && classes.glassPieceTile)}
 			onClick={handleClick}
-			onPointerEnter={event => onHover(
-				row,
-				col,
-				viewRow,
-				viewCol,
+			onPointerEnter={event => onHover(row, col, viewRow, viewCol,
 				event.nativeEvent.offsetX / event.currentTarget.clientWidth,
 				event.nativeEvent.offsetY / event.currentTarget.clientHeight
 			)}
+
 			style={{
 				'--piece-color': occupiedColor,
 				background:

@@ -1140,38 +1140,6 @@ const gameStyles = () => ({
 		boxShadow: 'none !important',
 	},
 
-	glassPieceTile: {
-		boxShadow: `
-			inset 1px 1px 2px rgba(255, 255, 255, 0.32),
-			inset -1px -1px 2px rgba(0, 0, 0, 0.28),
-			0 1px 3px rgba(0, 0, 0, 0.3)
-		`,
-
-		'&::after': {
-			content: '""',
-			position: 'absolute',
-			width: '42%',
-			height: '42%',
-			top: '50%',
-			left: '50%',
-			transform: 'translate(-50%, -50%) rotate(45deg)',
-			borderRadius: 2,
-			background: `
-				linear-gradient(
-					135deg,
-					rgba(0, 0, 0, 0.3),
-					rgba(0, 0, 0, 0.16) 52%,
-					rgba(255, 255, 255, 0.1)
-				)
-			`,
-			boxShadow: `
-				inset 1px 1px 2px rgba(0, 0, 0, 0.48),
-				inset -1px -1px 1px rgba(255, 255, 255, 0.2)
-			`,
-			pointerEvents: 'none',
-		},
-	},
-
 	boardFrame: {
 		position: 'relative',
 		width: 'fit-content',
@@ -1296,6 +1264,59 @@ const gameStyles = () => ({
 		userSelect: 'none',
 		borderRadius: 2,
 		transition: 'background-color 0.12s ease, box-shadow 0.12s ease, transform 0.08s ease',
+		
+	},
+
+	glassPieceTile: {
+		boxShadow: `
+			inset 1px 1px 2px rgba(255, 255, 255, 0.32),
+			inset -1px -1px 2px rgba(0, 0, 0, 0.28),
+			0 1px 3px rgba(0, 0, 0, 0.3)
+		`,
+
+		'&::after': {
+			content: '""',
+			position: 'absolute',
+			width: '42%',
+			height: '42%',
+			top: '50%',
+			left: '50%',
+			transform: 'translate(-50%, -50%) rotate(45deg)',
+			borderRadius: 2,
+			background: `
+				linear-gradient(
+					135deg,
+					rgba(0, 0, 0, 0.3),
+					rgba(0, 0, 0, 0.16) 52%,
+					rgba(255, 255, 255, 0.1)
+				)
+			`,
+			boxShadow: `
+				inset 1px 1px 2px rgba(0, 0, 0, 0.48),
+				inset -1px -1px 1px rgba(255, 255, 255, 0.2)
+			`,
+			pointerEvents: 'none',
+		},
+	},
+
+	bagButton: {
+		border: 'none',
+		background: 'transparent',
+		padding: 0,
+		cursor: 'pointer',
+		transition: 'transform 140ms ease, filter 140ms ease',
+
+		'&:hover': {
+			transform: 'translateY(-4px) rotate(-1deg)',
+			filter: 'drop-shadow(0 12px 18px rgba(0, 0, 0, 0.22))',
+		},
+
+		'&:disabled': {
+			cursor: 'not-allowed',
+			opacity: 0.55,
+			transform: 'none',
+			filter: 'none',
+		},
 	},
 })
 

@@ -1,34 +1,9 @@
 import { makeStyles } from 'tss-react/mui'
+import gameStyles from '../gameStyles'
 
-const useStyles = makeStyles()(() => ({
-	bagButton: {
-		border: 'none',
-		background: 'transparent',
-		padding: 0,
-		cursor: 'pointer',
-		transition: 'transform 140ms ease, filter 140ms ease',
+const useStyles = makeStyles()(gameStyles)
 
-		'&:hover': {
-			transform: 'translateY(-4px) rotate(-1deg)',
-			filter: 'drop-shadow(0 12px 18px rgba(0, 0, 0, 0.22))',
-		},
-
-		'&:disabled': {
-			cursor: 'not-allowed',
-			opacity: 0.55,
-			transform: 'none',
-			filter: 'none',
-		},
-	},
-}))
-
-function PieceBagButton({
-	name,
-	color,
-	size = 170,
-	disabled = false,
-	onClick,
-}) {
+function PieceBagButton({ name, color, size = 170, disabled = false, onClick }) {
 	const { classes } = useStyles()
 
 	const gridCells = []

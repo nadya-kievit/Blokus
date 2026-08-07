@@ -6,7 +6,8 @@ import clsx from 'clsx'
 import { gameSocketUrl, getGame, quitGame, restartGame } from '../services/api'
 import gameStyles from '../gameStyles'
 import Board from '../components/Board'
-import Piece, { CursorPiece } from '../components/Piece'
+import Piece from '../components/Piece'
+import CursorPiece from '../components/CursorPiece'
 
 const useStyles = makeStyles()(gameStyles)
 
@@ -867,7 +868,6 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 
 					<div className={classes.boardFrame}>
 						<Board
-							classes={classes}
 							board={board}
 							boardRotation={boardRotation}
 							onTileClick={handleTileClick}
@@ -990,7 +990,6 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 								transition={{ duration: 0.22, ease: 'easeOut' }}
 							>
 							<Piece
-								classes={classes}
 								piece={piece}
 								isWaitingForPlayers={isWaitingForPlayers}
 								placed={piece.placed}
