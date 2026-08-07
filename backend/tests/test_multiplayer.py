@@ -23,6 +23,7 @@ def setup_function():
         task.cancel()
     main_module.turn_tasks.clear()
     games.clear()
+    main_module.choose_starting_player_index = lambda _player_count: 0
 
 
 def create_joined_game():
@@ -83,6 +84,30 @@ def test_four_players_fill_seats_and_fifth_join_is_rejected():
 
     assert [player["playerId"] for player in players] == ["p1", "p2", "p3", "p4"]
     assert response.status_code == 409
+
+
+def test_starting_player_is_random_and_turns_then_move_clockwise():
+    main_module.choose_starting_player_index = lambda _player_count: 2
+    game_id = client.post("/games").json()["gameId"]
+
+    for color in ["Green", "Blue", "Yellow", "Red"]:
+        client.post(f"/games/{game_id}/join", json={"color": color})
+
+    game = games[game_id]
+
+    assert [player["name"] for player in game["players"]] == [
+        "Blue",
+        "Red",
+        "Green",
+        "Yellow",
+    ]
+    assert game["players"][game["currentTurnIndex"]]["name"] == "Green"
+
+    main_module.advance_turn(game)
+    assert game["players"][game["currentTurnIndex"]]["name"] == "Yellow"
+
+    main_module.advance_turn(game)
+    assert game["players"][game["currentTurnIndex"]]["name"] == "Blue"
 
 
 def test_game_uses_six_digit_invite_code_and_players_choose_colors():
@@ -282,6 +307,7 @@ def test_configured_bots_receive_remaining_colors_and_can_make_valid_moves():
 
 
 def test_bot_turn_waits_then_places_a_piece(monkeypatch):
+    main_module.choose_starting_player_index = lambda _player_count: 1
     created_game = client.post(
         "/games",
         json={

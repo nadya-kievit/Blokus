@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useLayoutEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence, LayoutGroup, motion } from 'motion/react'
 import { makeStyles } from 'tss-react/mui'
 import clsx from 'clsx'
 import { gameSocketUrl, getGame, quitGame, restartGame } from '../services/api'
@@ -187,6 +187,10 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 
 	const storageKey = `blokus-player-${gameId}`
 	const socketRef = useRef(null)
+	const gameMainRef = useRef(null)
+	const playersPanelRef = useRef(null)
+	const boardCenterRef = useRef(null)
+	const boardFrameRef = useRef(null)
 	const lastHoverTargetRef = useRef(null)
 	const cursorPieceRef = useRef(null)
 	const cursorPositionRef = useRef({ x: 0, y: 0 })
@@ -209,6 +213,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 	const [isQuitting, setIsQuitting] = useState(false)
 	const [isRestarting, setIsRestarting] = useState(false)
 	const [isWinnerModalClosed, setIsWinnerModalClosed] = useState(false)
+	const [expandedPlayerId, setExpandedPlayerId] = useState(null)
 
 	const me = useMemo(() => 
 		game?.players.find(player => player.id === credentials?.playerId),
@@ -276,7 +281,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 	const playerProgress = useMemo(() => {
 			const knownTotalBlocks = totalBlockCount(game?.players[0])
 
-			return PLAYER_PANEL_ORDER.map(name => {
+			return PLAYER_PANEL_ORDER.map((name, originalIndex) => {
 				const seat = PLAYER_SEATS.find(playerSeat => playerSeat.name === name)
 				const player = game?.players.find(joinedPlayer => joinedPlayer.name === name)
 				const placedBlocks = placedBlockCount(player)
@@ -289,8 +294,12 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 					placedBlocks,
 					totalBlocks,
 					progress: totalBlocks > 0 ? placedBlocks / totalBlocks : 0,
+					originalIndex,
 				}
-			})
+			}).sort((first, second) =>
+				second.placedBlocks - first.placedBlocks ||
+				first.originalIndex - second.originalIndex
+			)
 		},
 		[game]
 	)
@@ -419,6 +428,35 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 			window.removeEventListener('keydown', handleKeyDown)
 		}
 	}, [selectedPieceName])
+
+
+	useLayoutEffect(() => {
+		const gameMain = gameMainRef.current
+		const playersPanel = playersPanelRef.current
+		const boardCenter = boardCenterRef.current
+		const boardFrame = boardFrameRef.current
+
+		if (!gameMain || !playersPanel || !boardCenter || !boardFrame) return
+
+		const alignPlayerPanel = () => {
+			const gameMainBounds = gameMain.getBoundingClientRect()
+			const boardBounds = boardFrame.getBoundingClientRect()
+
+			playersPanel.style.top = `${boardBounds.top - gameMainBounds.top}px`
+		}
+
+		alignPlayerPanel()
+
+		const resizeObserver = new ResizeObserver(alignPlayerPanel)
+		resizeObserver.observe(gameMain)
+		resizeObserver.observe(boardCenter)
+		window.addEventListener('resize', alignPlayerPanel)
+
+		return () => {
+			resizeObserver.disconnect()
+			window.removeEventListener('resize', alignPlayerPanel)
+		}
+	}, [game?.status])
 
 
 	useLayoutEffect(() => {
@@ -718,40 +756,39 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 				</div>
 			</header>
 
-			<div className={classes.gameMain}>
-				<aside className={classes.playersLeftPanel}>
-					<div className={classes.playerPanelGrid}>
+			<div ref={gameMainRef} className={classes.gameMain}>
+				<aside ref={playersPanelRef} className={classes.playersLeftPanel}>
+					<LayoutGroup id="player-rankings">
+						<div className={classes.playerPanelGrid}>
 						{playerProgress.map(progress => {
 							const isMe = progress.player?.id === credentials.playerId
 							const isActiveTurn = progress.player?.id === game.currentPlayerId
+							const isExpanded = progress.player?.id === expandedPlayerId
+							const remainingPieces = progress.player?.pieces.filter(piece => !piece.placed) || []
 
 							return (
-								<div
+								<motion.div
 									key={progress.name}
+									layout="position"
 									className={clsx(classes.playerStatusCard, {
 										[classes.playerStatusActive]: isActiveTurn,
 										[classes.playerStatusEmpty]: !progress.player,
 									})}
 									style={{ '--player-color': progress.color }}
+									transition={{
+										layout: {
+											type: 'spring',
+											stiffness: 220,
+											damping: 28,
+											mass: 0.8,
+										},
+									}}
 								>
 									<div className={classes.playerStatusHeader}>
 										<div className={classes.playerStatusName}>
 											<span className={classes.playerStatusColor} />
 											{progress.name}
 										</div>
-
-										{isMe && (
-											<span className={classes.playerStatusYou}>You</span>
-										)}
-									</div>
-
-									<div className={classes.playerStatusConnection}>
-										<span />
-										{progress.player
-											? progress.player.isOutOfMoves || isFinished
-												? 'Out of moves'
-												: progress.player.connected ? 'Online' : 'Offline'
-											: 'Waiting'}
 									</div>
 
 									<div className={classes.playerStatusBody}>
@@ -764,57 +801,58 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 												blocks placed
 											</div>
 										</div>
+
+										{progress.player && (
+											<button
+												type="button"
+												className={classes.viewPiecesButton}
+												aria-expanded={isExpanded}
+												onClick={() => setExpandedPlayerId(currentId =>
+													currentId === progress.player.id ? null : progress.player.id
+												)}
+											>
+												{isExpanded ? 'Hide Pieces' : 'View Pieces'}
+											</button>
+										)}
 									</div>
-								</div>
+
+									<AnimatePresence initial={false}>
+										{isExpanded && (
+											<motion.div
+												className={clsx(
+													classes.playerRemainingPieces,
+													remainingPieces.length > 15 && classes.playerRemainingPiecesScrollable,
+												)}
+												initial={{ height: 0, opacity: 0 }}
+												animate={{ height: 'auto', opacity: 1 }}
+												exit={{ height: 0, opacity: 0 }}
+												transition={{ duration: 0.28, ease: 'easeOut' }}
+											>
+												{remainingPieces.map(piece => (
+													<Piece
+														key={piece.name}
+														piece={piece}
+														isWaitingForPlayers
+														placed={false}
+														isSelected={false}
+														rotation={0}
+														flipped={false}
+														color={progress.color}
+														displaySize={80}
+													/>
+												))}
+											</motion.div>
+										)}
+									</AnimatePresence>
+								</motion.div>
 							)
 						})}
-					</div>
-
-					<div className={classes.progressOverview}>
-						<div className={classes.progressOverviewTitle}>
-							Progress overview
 						</div>
-
-						<div className={classes.progressOverviewCard}>
-							{playerProgress.map(progress => {
-								const isMe = progress.player?.id === credentials.playerId
-								const filledSegments = Math.round(progress.progress * PROGRESS_SEGMENTS)
-
-								return (
-									<div key={progress.name} className={classes.progressOverviewRow}>
-										<div className={classes.progressOverviewName}>
-											<span style={{ background: progress.color }} />
-											{progress.name}
-											{isMe ? ' (You)' : ''}
-										</div>
-
-										<div
-											className={classes.progressSegments}
-											aria-label={`${progress.placedBlocks} of ${progress.totalBlocks || 0} blocks placed`}
-										>
-											{Array.from({ length: PROGRESS_SEGMENTS }).map((_, index) => (
-												<span
-													key={index}
-													style={{
-														background: index < filledSegments
-															? progress.color
-													: '#3b334a',
-													}}
-												/>
-											))}
-										</div>
-
-										<div className={classes.progressOverviewCount}>
-											{progress.placedBlocks} placed
-										</div>
-									</div>
-								)
-							})}
-						</div>
-					</div>
+					</LayoutGroup>
 				</aside>
 
 				<div
+					ref={boardCenterRef}
 					className={clsx(
 						classes.boardCenter,
 						isWaitingForPlayers && classes.boardCenterWaiting,
@@ -870,7 +908,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 						</AnimatePresence>
 					</div>
 
-					<div className={classes.boardFrame}>
+					<div ref={boardFrameRef} className={classes.boardFrame}>
 						<Board
 							board={board}
 							boardRotation={boardRotation}

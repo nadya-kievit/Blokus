@@ -4,11 +4,11 @@ import gameStyles from '../gameStyles'
 
 const useStyles = makeStyles()(gameStyles)
 
-function Piece({ piece, isWaitingForPlayers, placed, isSelected, onClick, rotation, flipped, color }) {
+function Piece({ piece, isWaitingForPlayers, placed, isSelected, onClick, rotation, flipped, color, displaySize }) {
 	const { classes } = useStyles()
 
     const size = 13
-    const cardSize = 72
+    const cardSize = displaySize || 72
     const activeColor = color || '#0077ee'
     const innerBorder = '1px solid rgba(0, 45, 120, 0.75)'
     const outerBorder = '1px solid rgba(0, 45, 120, 0.75)'
@@ -57,7 +57,11 @@ function Piece({ piece, isWaitingForPlayers, placed, isSelected, onClick, rotati
     }
 
     return (
-        <div className={clsx(isWaitingForPlayers && classes.pieceCardNoHover, !isWaitingForPlayers && classes.pieceCard, placed && classes.placed, isSelected && classes.selected)} onClick={onClick}>
+        <div
+            className={clsx(isWaitingForPlayers && classes.pieceCardNoHover, !isWaitingForPlayers && classes.pieceCard, placed && classes.placed, isSelected && classes.selected)}
+            onClick={onClick}
+            style={displaySize ? { width: displaySize, height: displaySize } : undefined}
+        >
 
         {rotatedCells.map((cell, index) => {
 

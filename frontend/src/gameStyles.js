@@ -107,10 +107,9 @@ const gameStyles = () => ({
 	playersLeftPanel: {
 		position: 'absolute',
 		left: 32,
-		top: '50%',
-		transform: 'translateY(-50%)',
+		top: 0,
 		zIndex: 2,
-		width: 420,
+		width: 500,
 		maxHeight: 760,
 		boxSizing: 'border-box',
 		display: 'flex',
@@ -120,14 +119,18 @@ const gameStyles = () => ({
 
 	playerPanelGrid: {
 		display: 'grid',
-		gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-		gap: 15,
+		gridTemplateColumns: 'minmax(0, 1fr)',
+		gap: 12,
 	},
 
 	playerStatusCard: {
-		minHeight: 158,
+		minHeight: 88,
 		boxSizing: 'border-box',
-		padding: '18px 17px 15px',
+		padding: '15px 17px',
+		display: 'grid',
+		gridTemplateColumns: 'minmax(0, 1fr) auto',
+		alignItems: 'center',
+		columnGap: 20,
 		border: '1px solid rgba(155, 113, 211, 0.28)',
 		borderRadius: 8,
 		background: 'rgba(24, 16, 37, 0.92)',
@@ -135,6 +138,7 @@ const gameStyles = () => ({
 		backdropFilter: 'blur(10px)',
 		WebkitBackdropFilter: 'blur(10px)',
 		color: '#f2eeff',
+		transition: 'border-color 220ms ease, box-shadow 220ms ease',
 	},
 
 	playerStatusActive: {
@@ -179,42 +183,56 @@ const gameStyles = () => ({
 		`,
 	},
 
-	playerStatusYou: {
-		flex: '0 0 auto',
-		padding: '4px 10px',
-		border: '1px solid rgba(37, 181, 100, 0.34)',
-		borderRadius: 999,
-		background: 'rgba(230, 255, 240, 0.78)',
-		color: '#20824b',
-		fontSize: 12,
-		fontWeight: 850,
-		lineHeight: 1,
-	},
-
-	playerStatusConnection: {
+	playerStatusBody: {
 		display: 'flex',
 		alignItems: 'center',
-		gap: 8,
-		marginTop: 16,
-		color: '#c5bddb',
-		fontSize: 14,
-		fontWeight: 750,
+		justifyContent: 'flex-end',
+		gap: 16,
+		textAlign: 'right',
+	},
 
-		'& span': {
-			width: 10,
-			height: 10,
-			borderRadius: '50%',
-			background: 'var(--player-color)',
-			opacity: 0.78,
+	viewPiecesButton: {
+		flex: '0 0 auto',
+		padding: '8px 11px',
+		whiteSpace: 'nowrap',
+	},
+
+	playerRemainingPieces: {
+		gridColumn: '1 / -1',
+		display: 'grid',
+		gridTemplateColumns: 'repeat(5, minmax(0, 80px))',
+		gap: 8,
+		justifyContent: 'space-between',
+		maxHeight: 274,
+		overflowX: 'hidden',
+		overflowY: 'hidden',
+		marginTop: 2,
+		paddingTop: 15,
+		scrollbarWidth: 'thin',
+		scrollbarColor: 'rgba(169, 108, 255, 0.72) transparent',
+
+		'&::-webkit-scrollbar': {
+			width: 8,
+		},
+
+		'&::-webkit-scrollbar-track': {
+			background: 'transparent',
+		},
+
+		'&::-webkit-scrollbar-thumb': {
+			borderRadius: 999,
+			background: 'rgba(169, 108, 255, 0.72)',
+		},
+
+		'&::-webkit-scrollbar-button': {
+			display: 'none',
+			width: 0,
+			height: 0,
 		},
 	},
 
-	playerStatusBody: {
-		display: 'flex',
-		alignItems: 'flex-end',
-		justifyContent: 'space-between',
-		gap: 15,
-		marginTop: 23,
+	playerRemainingPiecesScrollable: {
+		overflowY: 'auto',
 	},
 
 	playerStatusBlocks: {
@@ -225,89 +243,11 @@ const gameStyles = () => ({
 	},
 
 	playerStatusCaption: {
-		marginTop: 6,
+		marginTop: 4,
 		color: '#c5bddb',
 		fontSize: 14,
 		fontWeight: 700,
 		lineHeight: 1,
-	},
-
-	progressOverview: {
-		display: 'flex',
-		flexDirection: 'column',
-		gap: 12,
-	},
-
-	progressOverviewTitle: {
-		color: '#ffffff',
-		fontSize: 13,
-		fontWeight: 900,
-		letterSpacing: 1,
-		textTransform: 'uppercase',
-		textAlign: 'left',
-	},
-
-	progressOverviewCard: {
-		padding: '15px 17px',
-		border: '1px solid rgba(155, 113, 211, 0.28)',
-		borderRadius: 8,
-		background: 'rgba(24, 16, 37, 0.92)',
-		boxShadow: '0 10px 24px rgba(3, 1, 9, 0.38)',
-		backdropFilter: 'blur(10px)',
-		WebkitBackdropFilter: 'blur(10px)',
-	},
-
-	progressOverviewRow: {
-		display: 'grid',
-		gridTemplateColumns: '124px 1fr 78px',
-		alignItems: 'center',
-		gap: 13,
-		minHeight: 39,
-		borderBottom: '1px solid rgba(155, 113, 211, 0.16)',
-
-		'&:last-child': {
-			borderBottom: 0,
-		},
-	},
-
-	progressOverviewName: {
-		display: 'flex',
-		alignItems: 'center',
-		gap: 10,
-		minWidth: 0,
-		color: '#f2eeff',
-		fontSize: 14,
-		fontWeight: 850,
-		whiteSpace: 'nowrap',
-
-		'& span': {
-			width: 14,
-			height: 14,
-			borderRadius: '50%',
-			flex: '0 0 auto',
-			boxShadow: 'inset 0 -1px 2px rgba(0, 0, 0, 0.15)',
-		},
-	},
-
-	progressSegments: {
-		display: 'grid',
-		gridTemplateColumns: 'repeat(18, 1fr)',
-		gap: 4,
-		minWidth: 0,
-
-		'& span': {
-			height: 11,
-			borderRadius: 2,
-			transition: 'background-color 220ms ease',
-		},
-	},
-
-	progressOverviewCount: {
-		color: '#c5bddb',
-		fontSize: 13,
-		fontWeight: 750,
-		textAlign: 'right',
-		whiteSpace: 'nowrap',
 	},
 
 	startPage: {

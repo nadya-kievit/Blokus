@@ -240,8 +240,8 @@ def authenticate_player(game, player_id, player_token):
     return player
 
 
-def settings_player_number(player_key):
-    return int(player_key.rsplit(" ", 1)[1])
+def choose_starting_player_index(player_count):
+    return random.randrange(player_count)
 
 
 def start_game_if_ready(game):
@@ -287,13 +287,18 @@ def start_game_if_ready(game):
             )
         )
 
+    clockwise_color_order = {
+        seat["name"]: index
+        for index, seat in enumerate(PLAYER_COLORS)
+    }
     game["players"].sort(
-        key=lambda player: settings_player_number(player["settingsPlayerKey"])
+        key=lambda player: clockwise_color_order[player["name"]]
     )
-    game["currentTurnIndex"] = 0
+    game["currentTurnIndex"] = choose_starting_player_index(len(game["players"]))
     game["status"] = "playing"
     game["hasStarted"] = True
-    game["notice"] = f'{game["players"][0]["name"]} goes first.'
+    first_player = game["players"][game["currentTurnIndex"]]
+    game["notice"] = f'{first_player["name"]} goes first.'
     start_current_turn(game)
     return True
 
