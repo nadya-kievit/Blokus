@@ -1,47 +1,38 @@
 export const globalGameStyles = {
+
 	html: {
-			margin: 0,
-			minHeight: '100%',
-			width: '100%',
-			overflowX: 'hidden',
-			colorScheme: 'light',
-		},
+		minHeight: '100%',
+		colorScheme: 'light',
+	},
 
-		body: {
-			margin: 0,
-			minHeight: '100vh',
-			width: '100%',
-			overflowX: 'hidden',
-			background: 'rgba(21, 13, 33)',
-			fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-		},
+	body: {
+		margin: 0,
+		minHeight: '100vh',
+		background: 'rgba(21, 13, 33)',
+		fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+	},
 
-		'#root': {
-			margin: 0,
-			minHeight: '100vh',
-			width: '100%',
-			maxWidth: 'none',
-			overflowX: 'hidden',
-			border: 0,
-			boxSizing: 'border-box',
-		},
+	'#root': {
+		minHeight: '100vh',
+	},
 
-		button: {
-			border: '1px solid rgba(151, 104, 216, 0.32)',
-			borderRadius: 8,
-			padding: '10px 14px',
-			background: 'linear-gradient(145deg, #21172f, #171020)',
-			color: '#f4f0ff',
-			fontWeight: 750,
-			cursor: 'pointer',
-			boxShadow: '0 4px 12px rgba(5, 2, 12, 0.36)',
-		},
+	button: {
+		border: '1px solid rgba(151, 104, 216, 0.32)',
+		borderRadius: 8,
+		padding: '10px 14px',
+		background: 'linear-gradient(145deg, #21172f, #171020)',
+		color: '#f4f0ff',
+		fontWeight: 750,
+		cursor: 'pointer',
+		boxShadow: '0 4px 12px rgba(5, 2, 12, 0.36)',
+	},
 
-		'button:disabled': {
-			cursor: 'not-allowed',
-			opacity: 0.55,
-		},
+	'button:disabled': {
+		cursor: 'not-allowed',
+		opacity: 0.55,
+	}
 }
+
 
 const gameStyles = () => ({
 
@@ -239,28 +230,6 @@ const gameStyles = () => ({
 		fontSize: 14,
 		fontWeight: 700,
 		lineHeight: 1,
-	},
-
-	playerMiniBlocks: {
-		display: 'grid',
-		gridTemplateColumns: 'repeat(3, 17px)',
-		gridAutoRows: 17,
-		gap: 3,
-		justifyContent: 'end',
-
-		'& span': {
-			borderRadius: 2,
-			background: 'var(--player-color)',
-			boxShadow: `
-				inset 1px 1px 2px rgba(255, 255, 255, 0.45),
-				inset -1px -1px 2px rgba(0, 45, 120, 0.24)
-			`,
-		},
-	},
-
-	playerMiniBlockEmpty: {
-		background: '#3b334a !important',
-		boxShadow: 'none !important',
 	},
 
 	progressOverview: {
@@ -675,10 +644,6 @@ const gameStyles = () => ({
 		background: '#25b564',
 	},
 
-	connecting: {
-		background: '#f3b51b',
-	},
-
 	joining: {
 		background: '#f3b51b',
 	},
@@ -750,74 +715,6 @@ const gameStyles = () => ({
 		color: '#e5252a',
 		borderColor: 'rgba(229, 37, 42, 0.12)',
 		background: 'rgba(26, 17, 39, 0.9)',
-	},
-
-	playersBar: {
-		position: 'absolute',
-		top: 102,
-		left: 28,
-		right: 28,
-		display: 'flex',
-		flexWrap: 'wrap',
-		gap: 10,
-		zIndex: 2,
-	},
-
-	playerPill: {
-		display: 'inline-flex',
-		alignItems: 'center',
-		gap: 8,
-		minHeight: 34,
-		padding: '0 12px',
-		border: '2px solid rgba(255, 255, 255, 0.8)',
-		borderRadius: 8,
-		background: 'rgba(24, 16, 37, 0.9)',
-		color: '#f2eeff',
-		fontSize: 13,
-		fontWeight: 750,
-		boxShadow: '0 4px 10px rgba(35, 72, 100, 0.12)',
-	},
-
-	active: {
-		background: 'rgba(39, 26, 55, 0.94)',
-		boxShadow: '0 0 0 3px rgba(255, 255, 255, 0.72), 0 8px 16px rgba(35, 72, 100, 0.2)',
-	},
-	empty: {
-		color: '#9d93b1',
-		borderColor: 'rgba(255, 255, 255, 0.8)',
-	},
-
-	playerColor: {
-		width: 12,
-		height: 12,
-		borderRadius: '50%',
-		boxShadow: `
-			inset 0 1px 2px rgba(255, 255, 255, 0.8),
-			inset 0 -1px 2px rgba(0, 0, 0, 0.2)
-		`,
-	},
-
-	playerSeat: {
-		color: '#9d93b1',
-		fontSize: 11,
-		fontWeight: 650,
-	},
-
-	lobbyBanner: {
-		position: 'absolute',
-		left: '50%',
-		transform: 'translateX(-50%)',
-		zIndex: 3,
-		top: 152,
-		padding: '9px 14px',
-		borderRadius: 8,
-		background: 'rgba(24, 16, 37, 0.94)',
-		color: '#f2eeff',
-		fontSize: 14,
-		fontWeight: 750,
-		boxShadow: '0 6px 14px rgba(35, 72, 100, 0.16)',
-		backdropFilter: 'blur(8px)',
-		WebkitBackdropFilter: 'blur(8px)',
 	},
 
 	turnBanner: {
@@ -1243,66 +1140,6 @@ const gameStyles = () => ({
 		boxShadow: 'none !important',
 	},
 
-	piecePanelLockOverlay: {
-		position: 'absolute',
-		inset: 0,
-		zIndex: 4,
-		display: 'flex',
-		flexDirection: 'column',
-		alignItems: 'center',
-		justifyContent: 'center',
-		gap: 13,
-		padding: 24,
-		boxSizing: 'border-box',
-		borderRadius: 14,
-		background: `
-			radial-gradient(circle at 50% 47%, rgba(255, 255, 255, 0.54) 0%, rgba(255, 255, 255, 0.44) 18%, transparent 38%),
-			linear-gradient(
-				rgba(232, 244, 253, 0.42),
-				rgba(222, 238, 249, 0.5)
-			)
-		`,
-		backdropFilter: 'blur(1.5px) saturate(0.86)',
-		WebkitBackdropFilter: 'blur(1.5px) saturate(0.86)',
-		pointerEvents: 'auto',
-	},
-
-	piecePanelLockIcon: {
-		width: 40,
-		height: 40,
-		borderRadius: '50%',
-		display: 'flex',
-		alignItems: 'center',
-		justifyContent: 'center',
-		background: 'rgba(35, 24, 50, 0.92)',
-		border: '1px solid rgba(122, 157, 180, 0.34)',
-		boxShadow: `
-			0 8px 18px rgba(67, 124, 163, 0.12),
-			inset 0 1px 2px rgba(255, 255, 255, 0.9)
-		`,
-
-		'& svg': {
-			width: 22,
-			height: 22,
-			fill: 'none',
-			stroke: '#1f5c86',
-			strokeWidth: 1.8,
-			strokeLinecap: 'round',
-			strokeLinejoin: 'round',
-		},
-	},
-
-	piecePanelLockMessage: {
-		maxWidth: 210,
-		padding: '2px 8px',
-		color: '#f2eeff',
-		fontSize: 15,
-		fontWeight: 850,
-		lineHeight: 1.18,
-		textAlign: 'center',
-		textShadow: '0 1px 2px rgba(255, 255, 255, 0.95)',
-	},
-
 	glassPieceTile: {
 		boxShadow: `
 			inset 1px 1px 2px rgba(255, 255, 255, 0.32),
@@ -1335,41 +1172,9 @@ const gameStyles = () => ({
 		},
 	},
 
-	pieceTile: {
-		position: 'absolute',
-		boxSizing: 'border-box',
-		overflow: 'hidden',
-
-		'&::after': {
-			content: '""',
-			position: 'absolute',
-			width: '48%',
-			height: '48%',
-			top: '50%',
-			left: '50%',
-			transform: 'translate(-50%, -50%) rotate(45deg)',
-			borderRadius: 2,
-			background: `
-				linear-gradient(
-					135deg,
-					rgba(0, 35, 120, 0.32) 0%,
-					rgba(255, 255, 255, 0.16) 42%,
-					rgba(255, 255, 255, 0.28) 50%,
-					rgba(0, 35, 120, 0.38) 100%
-				)
-			`,
-			boxShadow: `
-				inset 1px 1px 2px rgba(0, 35, 120, 0.45),
-				inset -1px -1px 2px rgba(255, 255, 255, 0.22)
-			`,
-			pointerEvents: 'none',
-		},
-	},
-
 	boardFrame: {
 		position: 'relative',
 		width: 'fit-content',
-		height: 'fit-content',
 	},
 
 	boardLockOverlay: {
@@ -1395,14 +1200,6 @@ const gameStyles = () => ({
 		borderRadius: '50%',
 		border: '1px solid rgba(7, 2, 5, 0.9)',
 		background: 'rgba(24, 16, 37, 0.9)',
-
-		// remove old dotted pseudo ring
-		'&::before': {
-			content: 'none',
-		},
-		'&::after': {
-			content: 'none',
-		},
 	},
 
 	readyRingSvg: {
@@ -1448,17 +1245,6 @@ const gameStyles = () => ({
 		textAlign: 'center',
 	},
 
-	readyIcon: {
-		width: 34,
-		height: 34,
-		marginBottom: 8,
-		fill: 'none',
-		stroke: '#3c8bf2',
-		strokeWidth: 1.8,
-		strokeLinecap: 'round',
-		strokeLinejoin: 'round',
-	},
-
 	readyCount: {
 		color: '#f2eeff',
 		fontSize: 31,
@@ -1486,7 +1272,6 @@ const gameStyles = () => ({
 		gridTemplateColumns: 'repeat(20, 35px)',
 		gridTemplateRows: 'repeat(20, 35px)',
 		width: 'fit-content',
-		height: 'fit-content',
 		padding: 10,
 		borderRadius: 18,
 		background: 'linear-gradient(145deg, #21182f, #151020)',

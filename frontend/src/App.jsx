@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
-import { GlobalStyles } from '@mui/material'
-import { globalGameStyles } from './gameStyles'
 import CreateGameScreen from './screens/CreateGameScreen'
 import GameSettingsScreen from './screens/GameSettingsScreen'
 import ChooseColorScreen from './screens/ChooseColorScreen'
 import GameScreen from './screens/GameScreen'
 
+
+// Based on the current URL, set which screen should be displayed
 function getRouteFromPath(pathname) {
 	const gameMatch = pathname.match(/^\/game\/([^/]+)$/)
 
@@ -22,22 +22,27 @@ function getRouteFromPath(pathname) {
 	}
 }
 
+
+// Retrieves the saved player credentials for a game from browser storage
 function getStoredPlayer(gameId) {
 	const stored = localStorage.getItem(`blokus-player-${gameId}`)
 	return stored ? JSON.parse(stored) : null
 }
 
+
 function App() {
-	const globalStyles = <GlobalStyles styles={globalGameStyles} />
 	const [path, setPath] = useState(window.location.pathname)
 	const [prefetchedGame, setPrefetchedGame] = useState(null)
 	const [playerSessionVersion, setPlayerSessionVersion] = useState(0)
 	const [isConfiguringGame, setIsConfiguringGame] = useState(false)
-	const route = getRouteFromPath(path)
-	const hasPlayerCredentials =
-		route.gameId && Boolean(getStoredPlayer(route.gameId))
 
+	const route = getRouteFromPath(path)
+	const hasPlayerCredentials = route.gameId && Boolean(getStoredPlayer(route.gameId))
+
+
+	// Keeps React's route state in sync when the user navigates with Back or Forward
 	useEffect(() => {
+		// Copies the browser's current path into state after a history navigation event
 		const handlePopState = () => {
 			setPath(window.location.pathname)
 		}
@@ -49,11 +54,15 @@ function App() {
 		}
 	}, [])
 
+
+	// Adds a URL to browser history and immediately updates the rendered route
 	const navigateTo = nextPath => {
 		window.history.pushState({}, '', nextPath)
 		setPath(nextPath)
 	}
 
+
+	// Saves any host credentials and navigates to the selected or newly created game
 	const handleEnterGame = gameOrGameId => {
 		setIsConfiguringGame(false)
 
@@ -74,18 +83,22 @@ function App() {
 		navigateTo(`/game/${gameOrGameId.gameId}`)
 	}
 
+
+	// Refreshes the game route after the player has selected a color and joined
 	const handleStartPlaying = () => {
 		setPlayerSessionVersion(version => version + 1)
 	}
 
+
+	// Returns the player to the application's landing screen
 	const handleLeaveGame = () => {
 		navigateTo('/')
 	}
 
+
 	if (route.screen === 'createGame') {
 		return (
 			<>
-				{globalStyles}
 				{isConfiguringGame ? (
 					<GameSettingsScreen
 						onCreateRoom={handleEnterGame}
@@ -103,28 +116,22 @@ function App() {
 
 	if (!hasPlayerCredentials) {
 		return (
-			<>
-				{globalStyles}
-				<ChooseColorScreen
-					gameId={route.gameId}
-					initialGame={prefetchedGame?.gameId === route.gameId ? prefetchedGame : null}
-					onJoined={handleStartPlaying}
-					onBack={handleLeaveGame}
-				/>
-			</>
+			<ChooseColorScreen
+				gameId={route.gameId}
+				initialGame={prefetchedGame?.gameId === route.gameId ? prefetchedGame : null}
+				onJoined={handleStartPlaying}
+				onBack={handleLeaveGame}
+			/>
 		)
 	}
 
 	return (
-		<>
-			{globalStyles}
-			<GameScreen
-				key={`${route.gameId}-${playerSessionVersion}`}
-				gameId={route.gameId}
-				onLeaveGame={handleLeaveGame}
-				onNeedsColor={() => setPlayerSessionVersion(version => version + 1)}
-			/>
-		</>
+		<GameScreen
+			key={`${route.gameId}-${playerSessionVersion}`}
+			gameId={route.gameId}
+			onLeaveGame={handleLeaveGame}
+			onNeedsColor={() => setPlayerSessionVersion(version => version + 1)}
+		/>
 	)
 }
 
