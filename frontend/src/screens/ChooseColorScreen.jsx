@@ -9,13 +9,12 @@ const useStyles = makeStyles()(gameStyles)
 
 function ChooseColorScreen({ gameId, initialGame, onJoined, onBack }) {
 	const { classes } = useStyles()
-
 	const storageKey = `blokus-player-${gameId}`
 	const adminToken = localStorage.getItem(`blokus-admin-${gameId}`)
-
 	const [game, setGame] = useState(initialGame)
 	const [isJoining, setIsJoining] = useState(false)
 	const [lastMessage, setLastMessage] = useState('')
+
 
 	useEffect(() => {
 		if (game) return
@@ -43,6 +42,7 @@ function ChooseColorScreen({ gameId, initialGame, onJoined, onBack }) {
 		}
 	}, [gameId, game])
 
+
 	const handleChooseColor = async color => {
 		setIsJoining(true)
 		setLastMessage('')
@@ -62,6 +62,7 @@ function ChooseColorScreen({ gameId, initialGame, onJoined, onBack }) {
 		}
 	}
 
+	
 	return (
 		<div className={classes.startPage}>
 			<h1 className={classes.gameTitle}>Blokus</h1>

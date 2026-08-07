@@ -12,15 +12,14 @@ import CursorPiece from '../components/CursorPiece'
 const useStyles = makeStyles()(gameStyles)
 
 const BOARD_SIZE = 20
+const PLAYER_PANEL_ORDER = ['Green', 'Red', 'Blue', 'Yellow']
+const PROGRESS_SEGMENTS = 18
 const PLAYER_SEATS = [
 	{ name: 'Red', color: '#e34242' },
 	{ name: 'Blue', color: '#0077ee' },
 	{ name: 'Green', color: '#28a745' },
 	{ name: 'Yellow', color: '#f3b51b' },
 ]
-const PLAYER_PANEL_ORDER = ['Green', 'Red', 'Blue', 'Yellow']
-const PROGRESS_SEGMENTS = 18
-
 const EMPTY_BOARD = Array(BOARD_SIZE).fill(null).map(() =>
 	Array(BOARD_SIZE).fill(null).map(() => ({
 		occupied: false,
@@ -512,6 +511,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 		}
 	}
 
+
 	const handleRestart = async () => {
 		if (!credentials || game?.status !== 'finished') {
 			return
@@ -532,6 +532,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 			setIsRestarting(false)
 		}
 	}
+
 
 	const handleTileClick = () => {
 		if (!canMove || !selectedPiece || hoverCells.length === 0 || pendingPlacement) {
@@ -556,10 +557,12 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 		setHoverCells([])
 	}
 
+
 	const handleBoardLeave = useCallback(() => {
 		lastHoverTargetRef.current = null
 		setHoverCells([])
 	}, [])
+
 
 	const handleTileHover = useCallback((row, col, viewRow, viewCol, offsetX = 0.5, offsetY = 0.5) => {
 		lastHoverTargetRef.current = { row, col, viewRow, viewCol, offsetX, offsetY }
@@ -609,6 +612,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 		setHoverCells(nearestCells)
 	}, [board, boardRotation, canMove, me, selectedPiece])
 
+
 	useEffect(() => {
 		const hoverTarget = lastHoverTargetRef.current
 
@@ -623,7 +627,6 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 			hoverTarget.offsetY
 		)
 	}, [handleTileHover, selectedPiece])
-	
 
 
 	if (!game) {
@@ -648,8 +651,8 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 		return null
 	}
 
-	return (
-		<>
+	return (<>
+
 		{selectedPiece && createPortal(
 			<CursorPiece
 				piece={selectedPiece}
@@ -662,6 +665,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 			/>,
 			document.body
 		)}
+
 		<div className={classes.gamePage}>
 			{isWaitingForPlayers && (
 				<div className={classes.waitingGameVeil} aria-hidden="true" />
@@ -1097,8 +1101,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 				</div>
 			)}
 		</div>
-		</>
-	)
+	</>)
 }
 
 export default GameScreen

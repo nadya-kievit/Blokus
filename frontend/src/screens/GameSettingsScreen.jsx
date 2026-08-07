@@ -7,8 +7,8 @@ import gameStyles from '../gameStyles'
 const useStyles = makeStyles()(gameStyles)
 
 const TIME_LIMITS = ['No limit', '30s', '60s', '90s']
-
 const PLAYERS = ['Player 1', 'Player 2', 'Player 3', 'Player 4']
+
 
 function GameSettingsScreen({ onCreateRoom, onBack }) {
 	const { classes } = useStyles()
@@ -22,9 +22,7 @@ function GameSettingsScreen({ onCreateRoom, onBack }) {
 	const [isCreating, setIsCreating] = useState(false)
 	const [error, setError] = useState('')
 
-	const handlePlayerTypeChange = (player, type) => {
-		setPlayerTypes(current => ({ ...current, [player]: type }))
-	}
+	const handlePlayerTypeChange = (player, type) => { setPlayerTypes(current => ({ ...current, [player]: type })) }
 
 	const handleCreateRoom = async () => {
 		setIsCreating(true)
@@ -48,6 +46,7 @@ function GameSettingsScreen({ onCreateRoom, onBack }) {
 		}
 	}
 
+	
 	return (
 		<div className={classes.startPage}>
 			<h1 className={classes.gameTitle}>Blokus</h1>

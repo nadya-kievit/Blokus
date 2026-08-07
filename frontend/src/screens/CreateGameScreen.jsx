@@ -8,14 +8,15 @@ const useStyles = makeStyles()(gameStyles)
 
 function CreateGameScreen({ onEnterGame, onConfigureGame }) {
 	const { classes } = useStyles()
-
 	const [inviteCode, setInviteCode] = useState('')
 	const [error, setError] = useState('')
 	const codeInputRefs = useRef([])
 
+
 	useEffect(() => {
 		wakeGameServer().catch(() => {})
 	}, [])
+
 
 	const handleJoinGame = event => {
 		event.preventDefault()
@@ -28,9 +29,11 @@ function CreateGameScreen({ onEnterGame, onConfigureGame }) {
 		onEnterGame(inviteCode)
 	}
 
+
 	const focusCodeInput = index => {
 		codeInputRefs.current[index]?.focus()
 	}
+
 
 	const updateInviteCode = (index, value) => {
 		const digits = value.replace(/\D/g, '')
@@ -51,6 +54,7 @@ function CreateGameScreen({ onEnterGame, onConfigureGame }) {
 		focusCodeInput(Math.min(compactCode.length, 5))
 	}
 
+
 	const handleCodeKeyDown = (event, index) => {
 		if (event.key === 'Backspace' && !inviteCode[index] && index > 0) {
 			event.preventDefault()
@@ -69,11 +73,13 @@ function CreateGameScreen({ onEnterGame, onConfigureGame }) {
 		}
 	}
 
+
 	const handleCodePaste = (event, index) => {
 		event.preventDefault()
 		updateInviteCode(index, event.clipboardData.getData('text'))
 	}
 
+	
 	return (
 		<div className={classes.startPage}>
 			<h1 className={classes.gameTitle}>Blokus</h1>
