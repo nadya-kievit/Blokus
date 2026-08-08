@@ -8,18 +8,13 @@ import gameStyles from '../gameStyles'
 import Board from '../components/Board'
 import Piece from '../components/Piece'
 import CursorPiece from '../components/CursorPiece'
+import { PLAYER_COLORS, PLAYER_COLOR_HEX, getPlayerColorHex } from '../playerColors'
 
 const useStyles = makeStyles()(gameStyles)
 
 const BOARD_SIZE = 20
 const PLAYER_PANEL_ORDER = ['Green', 'Red', 'Blue', 'Yellow']
 const PROGRESS_SEGMENTS = 18
-const PLAYER_SEATS = [
-	{ name: 'Red', color: '#e34242' },
-	{ name: 'Blue', color: '#0077ee' },
-	{ name: 'Green', color: '#28a745' },
-	{ name: 'Yellow', color: '#f3b51b' },
-]
 const EMPTY_BOARD = Array(BOARD_SIZE).fill(null).map(() =>
 	Array(BOARD_SIZE).fill(null).map(() => ({
 		occupied: false,
@@ -208,7 +203,6 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 	const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 })
 	const [hoverCells, setHoverCells] = useState([])
 	const [pendingPlacement, setPendingPlacement] = useState(null)
-	const [connectionStatus, setConnectionStatus] = useState('joining')
 	const [lastMessage, setLastMessage] = useState('')
 	const [isQuitting, setIsQuitting] = useState(false)
 	const [isRestarting, setIsRestarting] = useState(false)
@@ -262,17 +256,17 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 			.filter(([, player]) => !player.isBot)
 
 		if (!configuredPlayers.length) {
-			return PLAYER_SEATS.map(seat => ({
+			return PLAYER_COLORS.map(seat => ({
 				key: seat.name,
-				color: game?.players.some(player => player.name === seat.name)
-					? seat.color
+				color: game?.players.some(player => player.color === seat.name)
+					? seat.hex
 					: null,
 			}))
 		}
 
 		return configuredPlayers.map(([key, player]) => ({
 			key,
-			color: PLAYER_SEATS.find(seat => seat.name === player.color)?.color || null,
+			color: getPlayerColorHex(player.color, null),
 		}))
 	}, [game])
 	const requiredPlayers = readySlots.length
@@ -282,14 +276,14 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 			const knownTotalBlocks = totalBlockCount(game?.players[0])
 
 			return PLAYER_PANEL_ORDER.map((name, originalIndex) => {
-				const seat = PLAYER_SEATS.find(playerSeat => playerSeat.name === name)
-				const player = game?.players.find(joinedPlayer => joinedPlayer.name === name)
+				const seat = PLAYER_COLORS.find(playerSeat => playerSeat.name === name)
+				const player = game?.players.find(joinedPlayer => joinedPlayer.color === name)
 				const placedBlocks = placedBlockCount(player)
 				const totalBlocks = player ? totalBlockCount(player) : knownTotalBlocks
 
 				return {
 					name,
-					color: seat?.color || player?.color || '#0077ee',
+					color: seat?.hex || getPlayerColorHex(player?.color),
 					player,
 					placedBlocks,
 					totalBlocks,
@@ -327,14 +321,9 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 				if (isActive) {
 					setGame(initialGame)
 				}
-
-				if (!credentials && isActive) {
-					setConnectionStatus('choosing')
-				}
 			} catch (err) {
 				if (isActive) {
 					setLastMessage(err.message)
-					setConnectionStatus('error')
 				}
 			}
 		}
@@ -354,7 +343,6 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 		socketRef.current = socket
 
 		socket.onopen = () => {
-			setConnectionStatus('connected')
 			socket.send(JSON.stringify({ type: 'request_state' }))
 		}
 
@@ -386,7 +374,6 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 
 		socket.onclose = () => {
 			setPendingPlacement(null)
-			setConnectionStatus('disconnected')
 		}
 
 		return () => {
@@ -714,15 +701,6 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 					<h1 className={clsx(classes.gameTitle, classes.gameHeaderTitle)}>
 						Blokus
 					</h1>
-					<div className={classes.connectionRow}>
-						<span
-							className={clsx(
-								classes.connectionDot,
-								classes[connectionStatus]
-							)}
-						/>
-						{connectionStatus}
-					</div>
 				</div>
 				<div className={classes.gameActions}>
 					<div className={classes.headerCode}>
@@ -787,7 +765,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 									<div className={classes.playerStatusHeader}>
 										<div className={classes.playerStatusName}>
 											<span className={classes.playerStatusColor} />
-											{progress.name}
+											{progress.player?.name || progress.name}
 										</div>
 									</div>
 
@@ -864,7 +842,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 								<motion.div
 									key={isFinished ? `finished-${game?.winnerId}` : game?.currentPlayerId}
 									className={clsx(classes.turnBanner, isFinished && classes.finishedBanner)}
-									style={{ '--turn-color': isFinished ? winner?.color || '#f3b51b' : currentPlayer?.color || '#f3b51b' }}
+									style={{ '--turn-color': getPlayerColorHex(isFinished ? winner?.color : currentPlayer?.color, PLAYER_COLOR_HEX.Yellow) }}
 									initial={{ opacity: 0, y: -4 }}
 									animate={{ opacity: 1, y: 0 }}
 									exit={{ opacity: 0, y: 4 }}
@@ -992,19 +970,14 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 				<div className={classes.piecesRight}>
 					<div className={classes.piecePanelHeader}>
 						<div className={classes.currentPlayerDetails}>
-							<div className={classes.panelEyebrow}>Current player</div>
 
 							<div className={classes.panelPlayerName}>
 								<span
 									className={classes.panelPlayerColor}
-									style={{ background: me?.color }}
+									style={{ background: getPlayerColorHex(me?.color) }}
 								/>
 
 								{me?.name || 'Joining...'}
-							</div>
-
-							<div className={classes.panelSubtitle}>
-								{isFinished ? 'Board review' : 'Choose a piece to place'}
 							</div>
 						</div>
 
@@ -1073,7 +1046,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 								<span
 									key={index}
 									className={index < remainingPieceCount ? classes.unused : classes.used}
-									style={{ '--piece-color': me?.color }}
+									style={{ '--piece-color': getPlayerColorHex(me?.color) }}
 								/>
 							))}
 						</div>
@@ -1097,7 +1070,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 
 						<div
 							className={classes.winnerBadge}
-							style={{ '--winner-color': winner?.color || '#f3b51b' }}
+							style={{ '--winner-color': getPlayerColorHex(winner?.color, PLAYER_COLOR_HEX.Yellow) }}
 						>
 							<svg aria-hidden="true" viewBox="0 0 24 24">
 								<path d="M6 9 8 20h8l2-11-4 3-2-6-2 6-4-3Z" />
@@ -1118,7 +1091,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 								<div
 									key={entry.playerId}
 									className={classes.leaderboardRow}
-									style={{ '--leader-color': entry.color }}
+									style={{ '--leader-color': getPlayerColorHex(entry.color) }}
 								>
 									<div className={classes.leaderboardRank}>
 										{index + 1}

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import CreateGameScreen from './screens/CreateGameScreen'
 import GameSettingsScreen from './screens/GameSettingsScreen'
-import ChooseColorScreen from './screens/ChooseColorScreen'
+import PlayerInfoScreen from './screens/PlayerInfoScreen'
 import GameScreen from './screens/GameScreen'
 
 
@@ -95,7 +95,6 @@ function App() {
 		navigateTo('/')
 	}
 
-
 	if (route.screen === 'createGame') {
 		return (
 			<>
@@ -116,7 +115,7 @@ function App() {
 
 	if (!hasPlayerCredentials) {
 		return (
-			<ChooseColorScreen
+			<PlayerInfoScreen
 				gameId={route.gameId}
 				initialGame={prefetchedGame?.gameId === route.gameId ? prefetchedGame : null}
 				onJoined={handleStartPlaying}

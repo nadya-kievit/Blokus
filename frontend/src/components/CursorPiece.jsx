@@ -1,12 +1,13 @@
 import { makeStyles } from 'tss-react/mui'
 import gameStyles from '../gameStyles'
+import { getPlayerColorHex } from '../playerColors'
 
 const useStyles = makeStyles()(gameStyles)
 
 function CursorPiece({ piece, rotation, flipped, color, cursorRef, position }) {
 	const { classes } = useStyles()
 	const size = 35
-	const activeColor = color || '#0077ee'
+	const activeColor = getPlayerColorHex(color)
 	const innerBorder = '1px solid transparent'
 	const outerBorder = '1px solid rgba(111, 101, 139, 0.62)'
 	const rotatedCells = piece.cells.map(([row, col]) => {

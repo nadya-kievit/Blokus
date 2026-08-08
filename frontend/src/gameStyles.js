@@ -1,3 +1,5 @@
+import { PLAYER_COLOR_HEX } from './playerColors'
+
 export const globalGameStyles = {
 
 	html: {
@@ -143,10 +145,6 @@ const gameStyles = () => ({
 
 	playerStatusActive: {
 		borderColor: 'var(--player-color)',
-		boxShadow: `
-			0 0 0 2px rgba(255, 255, 255, 0.74),
-			0 9px 20px rgba(67, 124, 163, 0.16)
-		`,
 	},
 
 	playerStatusEmpty: {
@@ -284,6 +282,59 @@ const gameStyles = () => ({
 			fontSize: 15,
 			lineHeight: 1.45,
 		},
+	},
+
+	playerInfoPanelStage: {
+		position: 'relative',
+		width: 750,
+		height: 430,
+		maxWidth: 'calc(100vw - 32px)',
+		overflow: 'hidden',
+	},
+
+	playerInfoPanel: {
+		position: 'absolute',
+		inset: 0,
+		width: '100%',
+		height: '100%',
+	},
+
+	playerNameForm: {
+		height: '100%',
+		display: 'flex',
+		flexDirection: 'column',
+		alignItems: 'center',
+	},
+
+	playerNameInput: {
+		width: '100%',
+		height: 64,
+		boxSizing: 'border-box',
+		padding: '0 22px',
+		border: '1px solid rgba(169, 108, 255, 0.72)',
+		borderRadius: 8,
+		outline: 'none',
+		background: 'rgba(18, 11, 29, 0.88)',
+		color: '#f4f0ff',
+		font: 'inherit',
+		fontSize: 18,
+
+		'&::placeholder': {
+			color: '#958ba9',
+		},
+
+		'&:focus': {
+			borderColor: 'rgba(169, 108, 255, 0.92)',
+			boxShadow: '0 0 0 3px rgba(169, 108, 255, 0.16)',
+		},
+	},
+
+	playerInfoActions: {
+		display: 'flex',
+		alignItems: 'center',
+		justifyContent: 'center',
+		gap: 22,
+		marginTop: 'auto',
 	},
 
 	startDivider: {
@@ -561,17 +612,6 @@ const gameStyles = () => ({
 		textShadow: '0 2px 8px rgba(130, 87, 218, 0.38)',
 	},
 
-	connectionRow: {
-		display: 'flex',
-		alignItems: 'center',
-		gap: 6,
-		marginTop: 5,
-		color: '#c5bddb',
-		fontSize: 11,
-		fontWeight: 650,
-		textTransform: 'capitalize',
-	},
-
 	connectionDot: {
 		width: 9,
 		height: 9,
@@ -585,15 +625,15 @@ const gameStyles = () => ({
 	},
 
 	joining: {
-		background: '#f3b51b',
+		background: PLAYER_COLOR_HEX.Yellow,
 	},
 
 	disconnected: {
-		background: '#e34242',
+		background: PLAYER_COLOR_HEX.Red,
 	},
 
 	error: {
-		background: '#e34242',
+		background: PLAYER_COLOR_HEX.Red,
 	},
 
 	gameActions: {
@@ -661,7 +701,8 @@ const gameStyles = () => ({
 		display: 'flex',
 		alignItems: 'center',
 		gap: 14,
-		width: 215,
+		width: 'max-content',
+		minWidth: 215,
 		maxWidth: 'calc(100vw - 48px)',
 		boxSizing: 'border-box',
 		padding: '12px 18px',
@@ -675,7 +716,8 @@ const gameStyles = () => ({
 	},
 
 	finishedBanner: {
-		width: 330,
+		width: 'max-content',
+		minWidth: 330,
 		justifyContent: 'space-between',
 	},
 
@@ -713,7 +755,7 @@ const gameStyles = () => ({
 		display: 'flex',
 		alignItems: 'center',
 		justifyContent: 'center',
-		background: 'var(--turn-color, #f3b51b)',
+		background: `var(--turn-color, ${PLAYER_COLOR_HEX.Yellow})`,
 		boxShadow: `
 			inset 0 2px 3px rgba(255, 255, 255, 0.5),
 			inset 0 -3px 5px rgba(0, 0, 0, 0.12),
@@ -741,6 +783,7 @@ const gameStyles = () => ({
 		fontSize: 16,
 		fontWeight: 850,
 		lineHeight: 1.08,
+		whiteSpace: 'nowrap',
 	},
 
 	turnTimer: {
@@ -943,15 +986,6 @@ const gameStyles = () => ({
 		textAlign: 'left',
 	},
 
-	panelEyebrow: {
-		marginBottom: 8,
-		color: '#cfc6ed',
-		fontSize: 10,
-		fontWeight: 850,
-		letterSpacing: 0.8,
-		textTransform: 'uppercase',
-	},
-
 	panelPlayerName: {
 		display: 'flex',
 		alignItems: 'center',
@@ -967,12 +1001,6 @@ const gameStyles = () => ({
 		height: 22,
 		borderRadius: '50%',
 		boxShadow: 'inset 0 -2px 3px rgba(0, 0, 0, 0.08)',
-	},
-
-	panelSubtitle: {
-		marginTop: 8,
-		color: '#c5bddb',
-		fontSize: 13,
 	},
 
 	placementHint: {
@@ -1053,7 +1081,6 @@ const gameStyles = () => ({
 	piecesRemaining: {
 		margin: 'auto 3px 0',
 		paddingTop: 15,
-		borderTop: '1px solid rgba(155, 113, 211, 0.22)',
 		color: '#c5bddb',
 		fontSize: 12,
 		textAlign: 'left',
@@ -1069,7 +1096,7 @@ const gameStyles = () => ({
 			width: 9,
 			height: 9,
 			borderRadius: '50%',
-			background: 'var(--piece-color, #0077ee)',
+			background: `var(--piece-color, ${PLAYER_COLOR_HEX.Blue})`,
 			boxShadow: 'inset 0 -1px 1px rgba(0, 0, 0, 0.12)',
 			transition: 'background-color 220ms ease, box-shadow 220ms ease',
 		},

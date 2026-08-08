@@ -43,11 +43,11 @@ export async function getGame(gameId) {
 }
 
 
-export async function joinGame(gameId, color, adminToken) {
+export async function joinGame(gameId, color, name, adminToken) {
 	const response = await fetch(`${API_BASE}/games/${gameId}/join`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ color, adminToken })
+		body: JSON.stringify({ color, name, adminToken })
 	})
 
 	return parseResponse(response)

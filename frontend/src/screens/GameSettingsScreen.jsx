@@ -53,7 +53,6 @@ function GameSettingsScreen({ onCreateRoom, onBack }) {
 
 			<div className={clsx(classes.startPanel, classes.settingsPanel)}>
 				<h2>Game settings</h2>
-				<p>Choose the timer and who controls each color.</p>
 
 				<section className={classes.settingsSection}>
 					<h3>Time limit per move</h3>

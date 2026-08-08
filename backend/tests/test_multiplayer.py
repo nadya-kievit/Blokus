@@ -95,19 +95,19 @@ def test_starting_player_is_random_and_turns_then_move_clockwise():
 
     game = games[game_id]
 
-    assert [player["name"] for player in game["players"]] == [
+    assert [player["color"] for player in game["players"]] == [
         "Blue",
         "Red",
         "Green",
         "Yellow",
     ]
-    assert game["players"][game["currentTurnIndex"]]["name"] == "Green"
+    assert game["players"][game["currentTurnIndex"]]["color"] == "Green"
 
     main_module.advance_turn(game)
-    assert game["players"][game["currentTurnIndex"]]["name"] == "Yellow"
+    assert game["players"][game["currentTurnIndex"]]["color"] == "Yellow"
 
     main_module.advance_turn(game)
-    assert game["players"][game["currentTurnIndex"]]["name"] == "Blue"
+    assert game["players"][game["currentTurnIndex"]]["color"] == "Blue"
 
 
 def test_game_uses_six_digit_invite_code_and_players_choose_colors():
@@ -117,7 +117,24 @@ def test_game_uses_six_digit_invite_code_and_players_choose_colors():
 
     assert len(game_id) == 6 and game_id.isdigit()
     assert red.json()["name"] == "Red"
+    assert red.json()["color"] == "Red"
     assert duplicate.status_code == 409
+
+
+def test_joined_player_name_is_trimmed_and_shared_in_game_state():
+    game_id = client.post("/games").json()["gameId"]
+    joined = client.post(
+        f"/games/{game_id}/join",
+        json={"color": "Blue", "name": "  Block Master  "},
+    )
+
+    assert joined.status_code == 200
+    assert joined.json()["name"] == "Block Master"
+    assert joined.json()["color"] == "Blue"
+
+    state = client.get(f"/games/{game_id}").json()
+    assert state["players"][0]["name"] == "Block Master"
+    assert state["players"][0]["color"] == "Blue"
 
 
 def test_game_stores_settings_selected_when_room_is_created():
@@ -548,7 +565,7 @@ def test_player_with_no_available_moves_is_marked_and_skipped():
     refresh_out_of_moves(game)
 
     state = client.get(f"/games/{game_id}").json()
-    blue = next(player for player in state["players"] if player["name"] == "Blue")
+    blue = next(player for player in state["players"] if player["color"] == "Blue")
 
     assert state["status"] == "playing"
     assert blue["isOutOfMoves"] is True

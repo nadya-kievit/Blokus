@@ -30,26 +30,22 @@ app.add_middleware(
 PLAYER_COLORS = [
     {
         "id": "p1",
-        "name": "Blue",
-        "color": "#0077ee",
+        "color": "Blue",
         "corner": {"row": 0, "col": 0},
     },
     {
         "id": "p2",
-        "name": "Red",
-        "color": "#e34242",
+        "color": "Red",
         "corner": {"row": 0, "col": BOARD_SIZE - 1},
     },
     {
         "id": "p3",
-        "name": "Green",
-        "color": "#28a745",
+        "color": "Green",
         "corner": {"row": BOARD_SIZE - 1, "col": BOARD_SIZE - 1},
     },
     {
         "id": "p4",
-        "name": "Yellow",
-        "color": "#f3b51b",
+        "color": "Yellow",
         "corner": {"row": BOARD_SIZE - 1, "col": 0},
     },
 ]
@@ -70,6 +66,7 @@ class MoveRequest(BaseModel):
 
 class JoinRequest(BaseModel):
     color: str
+    name: str | None = Field(default=None, max_length=24)
     adminToken: str | None = None
 
 
@@ -108,10 +105,11 @@ def make_piece_set():
     ]
 
 
-def make_runtime_player(seat, player_number, settings_player_key, is_bot=False):
+def make_runtime_player(seat, player_number, settings_player_key, is_bot=False, player_name=None):
     return {
         **deepcopy(seat),
         "id": f"p{player_number}",
+        "name": player_name or (seat["color"] + " Bot"),
         "settingsPlayerKey": settings_player_key,
         "token": None if is_bot else secrets.token_urlsafe(16),
         "pieces": make_piece_set(),
@@ -208,7 +206,7 @@ def game_snapshot(game):
         "leaderboard": game["leaderboard"],
         "availableColors": [
             seat for seat in PLAYER_COLORS
-            if not any(player["name"] == seat["name"] for player in game["players"])
+            if not any(player["color"] == seat["color"] for player in game["players"])
         ],
         "notice": game["notice"],
     }
@@ -263,7 +261,7 @@ def start_game_if_ready(game):
     }
     available_seats = [
         seat for seat in PLAYER_COLORS
-        if seat["name"] not in used_colors
+        if seat["color"] not in used_colors
     ]
     runtime_player_keys = {
         player["settingsPlayerKey"]
@@ -275,7 +273,7 @@ def start_game_if_ready(game):
             continue
 
         seat = available_seats.pop(0)
-        player_settings["color"] = seat["name"]
+        player_settings["color"] = seat["color"]
         player_number = game["nextPlayerNumber"]
         game["nextPlayerNumber"] += 1
         game["players"].append(
@@ -288,11 +286,11 @@ def start_game_if_ready(game):
         )
 
     clockwise_color_order = {
-        seat["name"]: index
+        seat["color"]: index
         for index, seat in enumerate(PLAYER_COLORS)
     }
     game["players"].sort(
-        key=lambda player: clockwise_color_order[player["name"]]
+        key=lambda player: clockwise_color_order[player["color"]]
     )
     game["currentTurnIndex"] = choose_starting_player_index(len(game["players"]))
     game["status"] = "playing"
@@ -767,6 +765,10 @@ def get_game_state(game_id: str):
 async def join_game(game_id: str, request: JoinRequest):
     game = get_game_or_404(game_id)
 
+    player_name = request.name.strip() if request.name is not None else None
+    if request.name is not None and not player_name:
+        raise HTTPException(status_code=400, detail="Enter a game name.")
+
     if request.adminToken:
         if request.adminToken != game["adminToken"]:
             raise HTTPException(status_code=403, detail="Invalid admin credentials.")
@@ -777,12 +779,12 @@ async def join_game(game_id: str, request: JoinRequest):
         raise HTTPException(status_code=409, detail="This game already has four players.")
 
     seat = next(
-        (deepcopy(seat) for seat in PLAYER_COLORS if seat["name"].lower() == request.color.lower()),
+        (deepcopy(seat) for seat in PLAYER_COLORS if seat["color"].lower() == request.color.lower()),
         None,
     )
     if not seat:
         raise HTTPException(status_code=400, detail="Choose one of the available colors.")
-    if any(player["name"] == seat["name"] for player in game["players"]):
+    if any(player["color"] == seat["color"] for player in game["players"]):
         raise HTTPException(status_code=409, detail="That color has already been chosen.")
 
     player_number = game["nextPlayerNumber"]
@@ -802,9 +804,10 @@ async def join_game(game_id: str, request: JoinRequest):
         seat,
         player_number,
         settings_player_key=settings_player_key,
+        player_name=player_name,
     )
     game["players"].append(player)
-    game["settings"]["players"][player["settingsPlayerKey"]]["color"] = player["name"]
+    game["settings"]["players"][player["settingsPlayerKey"]]["color"] = player["color"]
 
     if request.adminToken:
         game["adminPlayerId"] = player["id"]

@@ -1,6 +1,7 @@
 import clsx from 'clsx'
 import { makeStyles } from 'tss-react/mui'
 import gameStyles from '../gameStyles'
+import { getPlayerColorHex } from '../playerColors'
 
 const useStyles = makeStyles()(gameStyles)
 
@@ -9,7 +10,7 @@ function Piece({ piece, isWaitingForPlayers, placed, isSelected, onClick, rotati
 
     const size = 13
     const cardSize = displaySize || 72
-    const activeColor = color || '#0077ee'
+    const activeColor = getPlayerColorHex(color)
     const innerBorder = '1px solid rgba(0, 45, 120, 0.75)'
     const outerBorder = '1px solid rgba(0, 45, 120, 0.75)'
 

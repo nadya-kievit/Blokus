@@ -1,6 +1,7 @@
 import clsx from 'clsx'
 import { makeStyles } from 'tss-react/mui'
 import gameStyles from '../gameStyles'
+import { getPlayerColorHex } from '../playerColors'
 
 const useStyles = makeStyles()(gameStyles)
 
@@ -8,7 +9,7 @@ function Tile({value, row, col, viewRow, viewCol, onClick, onHover, isHovered, n
 	const { classes } = useStyles()
 
 	const isOccupied = value.occupied
-	const occupiedColor = value.color || '#0077ee'
+	const occupiedColor = getPlayerColorHex(value.color)
 	const handleClick = () => { onClick(row, col, viewRow, viewCol) }
 	const belongsToSamePiece = neighbor => isOccupied && value.pieceId && neighbor?.pieceId === value.pieceId
 
