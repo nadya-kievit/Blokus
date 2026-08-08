@@ -5,8 +5,9 @@ import { getPlayerColorHex } from '../playerColors'
 
 const useStyles = makeStyles()(gameStyles)
 
-function Piece({ piece, isWaitingForPlayers, placed, isSelected, onClick, rotation, flipped, color, displaySize }) {
+function Piece({ piece, isWaitingForPlayers, placed, isSelected, isPlayable = true, disabled = false, onClick, rotation, flipped, color, displaySize }) {
 	const { classes } = useStyles()
+	const isInteractive = !isWaitingForPlayers && !placed && isPlayable && !disabled
 
     const size = 13
     const cardSize = displaySize || 72
@@ -59,8 +60,12 @@ function Piece({ piece, isWaitingForPlayers, placed, isSelected, onClick, rotati
 
     return (
         <div
-            className={clsx(isWaitingForPlayers && classes.pieceCardNoHover, !isWaitingForPlayers && classes.pieceCard, placed && classes.placed, isSelected && classes.selected)}
-            onClick={onClick}
+            className={clsx(
+                isInteractive ? classes.pieceCard : classes.pieceCardNoHover,
+                placed && classes.placed,
+                isSelected && isInteractive && classes.selected,
+            )}
+            onClick={isInteractive ? onClick : undefined}
             style={displaySize ? { width: displaySize, height: displaySize } : undefined}
         >
 
@@ -88,8 +93,10 @@ function Piece({ piece, isWaitingForPlayers, placed, isSelected, onClick, rotati
                                 : `${activeColor}`,
 
                         
-                        opacity: placed ? 0.6 : 1,
-                        cursor: placed ? 'default' : 'pointer',
+                        opacity: !isPlayable ? 0.6 : placed ? 0.6 : 1,
+						filter: !isPlayable ? 'saturate(0.5)' : 'none',
+						cursor: isInteractive ? 'pointer' : 'default',
+						transition: 'top 160ms ease-out, left 160ms ease-out, opacity 180ms ease, filter 180ms ease',
                         ...bordersForCell(cell, cellKeys, innerBorder, outerBorder),
                         borderRadius: '1px',
                     }}

@@ -1066,7 +1066,7 @@ const gameStyles = () => ({
 		borderRadius: 9,
 		background: 'rgba(19, 12, 30, 0.78)',
 		boxShadow: '0 5px 14px rgba(3, 1, 9, 0.3)',
-		cursor: 'pointer',
+		cursor: 'default',
 		transition: 'transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease'
 	},
 

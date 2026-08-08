@@ -109,7 +109,7 @@ def make_runtime_player(seat, player_number, settings_player_key, is_bot=False, 
     return {
         **deepcopy(seat),
         "id": f"p{player_number}",
-        "name": player_name or (seat["color"] + " Bot"),
+        "name": player_name or (f'{seat["color"]} Bot' if is_bot else seat["color"]),
         "settingsPlayerKey": settings_player_key,
         "token": None if is_bot else secrets.token_urlsafe(16),
         "pieces": make_piece_set(),

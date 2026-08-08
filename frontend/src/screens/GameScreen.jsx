@@ -14,7 +14,6 @@ const useStyles = makeStyles()(gameStyles)
 
 const BOARD_SIZE = 20
 const PLAYER_PANEL_ORDER = ['Green', 'Red', 'Blue', 'Yellow']
-const PROGRESS_SEGMENTS = 18
 const EMPTY_BOARD = Array(BOARD_SIZE).fill(null).map(() =>
 	Array(BOARD_SIZE).fill(null).map(() => ({
 		occupied: false,
@@ -123,6 +122,58 @@ function isValidPlacement(board, cells, player, isFirstMove) {
 }
 
 
+function canPlacePieceInOrientation(
+	board,
+	piece,
+	rotation,
+	flipped,
+	player,
+	boardRotation,
+	isFirstMove,
+) {
+	const rotatedCells = rotationForCells(piece.cells, rotation, flipped)
+	const minRow = Math.min(...rotatedCells.map(cell => cell[0]))
+	const minCol = Math.min(...rotatedCells.map(cell => cell[1]))
+	const pieceRows = Math.max(...rotatedCells.map(cell => cell[0])) - minRow + 1
+	const pieceCols = Math.max(...rotatedCells.map(cell => cell[1])) - minCol + 1
+
+	for (let anchorRow = 0; anchorRow <= BOARD_SIZE - pieceRows; anchorRow += 1) {
+		for (let anchorCol = 0; anchorCol <= BOARD_SIZE - pieceCols; anchorCol += 1) {
+			const cells = rotatedCells.map(cell => viewToBoard(
+				anchorRow + cell[0] - minRow,
+				anchorCol + cell[1] - minCol,
+				boardRotation,
+				BOARD_SIZE,
+			))
+
+			if (isValidPlacement(board, cells, player, isFirstMove)) {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+
+function nextPieceOrientations(rotation, flipped) {
+	const normalizedRotation = rotation % 360
+	const orientations = []
+
+	for (const nextFlipped of [flipped, !flipped]) {
+		for (const rotationOffset of [90, 180, 270, 0]) {
+			const nextRotation = (normalizedRotation + rotationOffset) % 360
+
+			if (nextRotation === normalizedRotation && nextFlipped === flipped) continue
+
+			orientations.push({ rotation: nextRotation, flipped: nextFlipped })
+		}
+	}
+
+	return orientations
+}
+
+
 function secondsUntil(timestamp) {
 	return Math.max(0, Math.ceil((timestamp - Date.now()) / 1000))
 }
@@ -206,7 +257,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 	const [lastMessage, setLastMessage] = useState('')
 	const [isQuitting, setIsQuitting] = useState(false)
 	const [isRestarting, setIsRestarting] = useState(false)
-	const [isWinnerModalClosed, setIsWinnerModalClosed] = useState(false)
+	const [closedWinnerTurnNumber, setClosedWinnerTurnNumber] = useState(null)
 	const [expandedPlayerId, setExpandedPlayerId] = useState(null)
 
 	const me = useMemo(() => 
@@ -219,28 +270,98 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 		[game]
 	)
 
-	const pieces = useMemo(() => 
-		(me?.pieces || []).map(piece => ({
-			...piece,
-			rotation: pieceRotations[piece.name] || 0,
-			flipped: pieceFlips[piece.name] || false,
-		})),
-		[me, pieceFlips, pieceRotations]
-	)
-
-	const selectedPiece = useMemo(() => 
-		pieces.find(piece => piece.name === selectedPieceName && !piece.placed) || null,
-		[pieces, selectedPieceName]
-	)
-	const availablePieces = pieces.filter(piece =>
-		!piece.placed && piece.name !== pendingPlacement?.pieceName
-	)
-	const remainingPieceCount = availablePieces.length
-
 	const canMove = game?.status === 'playing' && game.currentPlayerId === credentials?.playerId
 	const board = game?.board || EMPTY_BOARD
 	const isFinished = game?.status === 'finished'
+	const isWinnerModalClosed = isFinished && closedWinnerTurnNumber === game?.turnNumber
 	const boardRotation = rotationForCorner(me?.corner)
+	const pieces = useMemo(() => {
+		const isFirstMove = !me?.pieces.some(piece => piece.placed)
+
+		return (me?.pieces || []).map(piece => {
+			const rotation = pieceRotations[piece.name] || 0
+			const flipped = pieceFlips[piece.name] || false
+			const pieceWithOrientation = { ...piece, rotation, flipped }
+
+			if (piece.placed || game?.status !== 'playing') return pieceWithOrientation
+
+			if (canPlacePieceInOrientation(
+				board,
+				piece,
+				rotation,
+				flipped,
+				me,
+				boardRotation,
+				isFirstMove,
+			)) return pieceWithOrientation
+
+			const nextOrientation = nextPieceOrientations(rotation, flipped)
+				.find(orientation => canPlacePieceInOrientation(
+					board,
+					piece,
+					orientation.rotation,
+					orientation.flipped,
+					me,
+					boardRotation,
+					isFirstMove,
+				))
+
+			return nextOrientation
+				? { ...pieceWithOrientation, ...nextOrientation }
+				: pieceWithOrientation
+		})
+	}, [board, boardRotation, game?.status, me, pieceFlips, pieceRotations])
+
+	const playablePieceNames = useMemo(() => {
+		const playableNames = new Set()
+
+		if (!me) return playableNames
+
+		if (game?.status !== 'playing') {
+			for (const piece of pieces) {
+				if (!piece.placed) playableNames.add(piece.name)
+			}
+
+			return playableNames
+		}
+
+		const isFirstMove = !me.pieces.some(piece => piece.placed)
+
+		for (const piece of pieces) {
+			if (piece.placed) continue
+
+			const isPlayable = canPlacePieceInOrientation(
+				board,
+				piece,
+				piece.rotation,
+				piece.flipped,
+				me,
+				boardRotation,
+				isFirstMove,
+			)
+
+			if (isPlayable) playableNames.add(piece.name)
+		}
+
+		return playableNames
+	}, [board, boardRotation, game?.status, me, pieces])
+
+	const selectedPiece = useMemo(() => 
+		pieces.find(piece =>
+			piece.name === selectedPieceName &&
+			!piece.placed &&
+			playablePieceNames.has(piece.name)
+		) || null,
+		[pieces, playablePieceNames, selectedPieceName]
+	)
+	const availablePieces = useMemo(() => pieces
+		.filter(piece => !piece.placed && piece.name !== pendingPlacement?.pieceName)
+		.sort((first, second) =>
+			Number(playablePieceNames.has(second.name)) - Number(playablePieceNames.has(first.name))
+		),
+		[pendingPlacement?.pieceName, pieces, playablePieceNames]
+	)
+	const remainingPieceCount = availablePieces.length
 
 	const winner = useMemo(() => 
 		game?.players.find(player => player.id === game?.winnerId),
@@ -298,17 +419,11 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 		[game]
 	)
 
-
 	useEffect(() => {
 		if (game && !credentials) {
 			onNeedsColor()
 		}
 	}, [game, credentials, onNeedsColor])
-
-
-	useEffect(() => {
-		setIsWinnerModalClosed(false)
-	}, [game?.winnerId])
 
 
 	useEffect(() => {
@@ -384,7 +499,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 
 	useEffect(() => {
 		const handleKeyDown = event => {
-			if (!selectedPieceName) return
+			if (!canMove || !selectedPiece) return
 
 			if (!['ArrowRight', 'ArrowLeft', 'ArrowUp', 'ArrowDown'].includes(event.key)) return
 
@@ -393,18 +508,17 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 			if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
 				setPieceFlips(prev => ({
 					...prev,
-					[selectedPieceName]: !prev[selectedPieceName],
+					[selectedPiece.name]: !selectedPiece.flipped,
 				}))
 				return
 			}
 
 			setPieceRotations(prev => {
 				const rotationChange = event.key === 'ArrowRight' ? 90 : -90
-				const currentRotation = prev[selectedPieceName] || 0
 
 				return {
 					...prev,
-					[selectedPieceName]: (currentRotation + rotationChange + 360) % 360,
+					[selectedPiece.name]: (selectedPiece.rotation + rotationChange + 360) % 360,
 				}
 			})
 		}
@@ -414,7 +528,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 		return () => {
 			window.removeEventListener('keydown', handleKeyDown)
 		}
-	}, [selectedPieceName])
+	}, [canMove, selectedPiece])
 
 
 	useLayoutEffect(() => {
@@ -739,7 +853,6 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 					<LayoutGroup id="player-rankings">
 						<div className={classes.playerPanelGrid}>
 						{playerProgress.map(progress => {
-							const isMe = progress.player?.id === credentials.playerId
 							const isActiveTurn = progress.player?.id === game.currentPlayerId
 							const isExpanded = progress.player?.id === expandedPlayerId
 							const remainingPieces = progress.player?.pieces.filter(piece => !piece.placed) || []
@@ -985,7 +1098,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 							<span className={classes.hintPieceIcon} />
 
 							<span>
-								Tap a piece to
+								Click a piece to
 								<br />
 								see where it fits
 							</span>
@@ -994,7 +1107,10 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 
 					<div data-game-piece className={classes.pieceCardGrid}>
 						<AnimatePresence mode="popLayout" initial={false}>
-						{availablePieces.map(piece => (
+						{availablePieces.map(piece => {
+							const isPlayable = playablePieceNames.has(piece.name)
+
+							return (
 							<motion.div
 								key={piece.name}
 								layout
@@ -1009,9 +1125,11 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 								isWaitingForPlayers={isWaitingForPlayers}
 								placed={piece.placed}
 								color={me?.color}
-								isSelected={selectedPieceName === piece.name}
+								isSelected={isPlayable && selectedPieceName === piece.name}
+								isPlayable={isPlayable}
+								disabled={!canMove}
 								onClick={event => {
-									if (piece.placed || !canMove) return
+									if (piece.placed || !canMove || !isPlayable) return
 
 									if (selectedPieceName === piece.name) {
 										setSelectedPieceName(null)
@@ -1031,7 +1149,8 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 								flipped={piece.flipped}
 							/>
 							</motion.div>
-						))}
+							)
+						})}
 						</AnimatePresence>
 					</div>
 
@@ -1059,7 +1178,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 					<div className={classes.winnerModal}>
 						<button
 							className={classes.modalCloseButton}
-							onClick={() => setIsWinnerModalClosed(true)}
+							onClick={() => setClosedWinnerTurnNumber(game?.turnNumber)}
 							aria-label="Close winner summary"
 						>
 							<svg aria-hidden="true" viewBox="0 0 24 24">
