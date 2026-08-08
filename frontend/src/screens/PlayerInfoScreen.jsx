@@ -127,17 +127,19 @@ function PlayerInfoScreen({ gameId, initialGame, onJoined, onBack }) {
 								<div className={classes.inviteLabel}>Invite code</div>
 								<div className={classes.inviteCode}>{gameId}</div>
 
-								<h2>Set your player name</h2>
+								<div className={classes.playerNameFields}>
+									<h2>Set your player name</h2>
 
-								<input
-									type="text"
-									value={playerName}
-									onChange={event => setPlayerName(event.target.value)}
-									className={classes.playerNameInput}
-									placeholder="Enter player name"
-									maxLength={24}
-									autoFocus
-								/>
+									<input
+										type="text"
+										value={playerName}
+										onChange={event => setPlayerName(event.target.value)}
+										className={classes.playerNameInput}
+										placeholder="Enter player name"
+										maxLength={24}
+										autoFocus
+									/>
+								</div>
 
 								<div className={classes.playerInfoActions}>
 									<button type="button" className={classes.textButton} onClick={handleBackToColors}>

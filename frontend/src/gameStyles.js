@@ -306,6 +306,21 @@ const gameStyles = () => ({
 		alignItems: 'center',
 	},
 
+	playerNameFields: {
+		width: '100%',
+		flex: 1,
+		display: 'flex',
+		flexDirection: 'column',
+		alignItems: 'center',
+		justifyContent: 'center',
+		boxSizing: 'border-box',
+		paddingBottom: 80,
+
+		'& h2': {
+			marginBottom: 18,
+		},
+	},
+
 	playerNameInput: {
 		width: '100%',
 		height: 64,
