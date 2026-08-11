@@ -25,7 +25,7 @@ function getRouteFromPath(pathname) {
 
 // Retrieves the saved player credentials for a game from browser storage
 function getStoredPlayer(gameId) {
-	const stored = localStorage.getItem(`blokus-player-${gameId}`)
+	const stored = localStorage.getItem(`blokit-player-${gameId}`)
 	return stored ? JSON.parse(stored) : null
 }
 
@@ -74,7 +74,7 @@ function App() {
 
 		if (gameOrGameId.adminToken) {
 			localStorage.setItem(
-				`blokus-admin-${gameOrGameId.gameId}`,
+				`blokit-admin-${gameOrGameId.gameId}`,
 				gameOrGameId.adminToken,
 			)
 		}

@@ -1,3 +1,11 @@
+## What is Blokus?
+
+## How to Play
+
+## How to Run
+
+# Architecture
+
 # Run the Frontend
 cd frontend
 npm run dev

@@ -82,7 +82,7 @@ function CreateGameScreen({ onEnterGame, onConfigureGame }) {
 	
 	return (
 		<div className={classes.startPage}>
-			<h1 className={classes.gameTitle}>Blokus</h1>
+			<h1 className={classes.gameTitle}>Blokit</h1>
 
 			<div className={classes.startPanel} style={{width: '500px'}}>
 				<h2>Play online</h2>

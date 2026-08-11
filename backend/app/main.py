@@ -27,27 +27,24 @@ app.add_middleware(
 )
 
 
+MAX_PLAYERS = 4
+
 PLAYER_COLORS = [
-    {
-        "id": "p1",
-        "color": "Blue",
-        "corner": {"row": 0, "col": 0},
-    },
-    {
-        "id": "p2",
-        "color": "Red",
-        "corner": {"row": 0, "col": BOARD_SIZE - 1},
-    },
-    {
-        "id": "p3",
-        "color": "Green",
-        "corner": {"row": BOARD_SIZE - 1, "col": BOARD_SIZE - 1},
-    },
-    {
-        "id": "p4",
-        "color": "Yellow",
-        "corner": {"row": BOARD_SIZE - 1, "col": 0},
-    },
+    {"color": "Blue"},
+    {"color": "Red"},
+    {"color": "Green"},
+    {"color": "Yellow"},
+    {"color": "Pink"},
+    {"color": "Purple"},
+    {"color": "Cyan"},
+    {"color": "Orange"},
+]
+
+PLAYER_CORNERS = [
+    {"row": 0, "col": 0},
+    {"row": 0, "col": BOARD_SIZE - 1},
+    {"row": BOARD_SIZE - 1, "col": BOARD_SIZE - 1},
+    {"row": BOARD_SIZE - 1, "col": 0},
 ]
 
 games = {}
@@ -105,11 +102,21 @@ def make_piece_set():
     ]
 
 
-def make_runtime_player(seat, player_number, settings_player_key, is_bot=False, player_name=None):
+def make_runtime_player(
+    color_option,
+    corner,
+    player_number,
+    settings_player_key,
+    is_bot=False,
+    player_name=None,
+):
     return {
-        **deepcopy(seat),
+        **deepcopy(color_option),
+        "corner": deepcopy(corner),
         "id": f"p{player_number}",
-        "name": player_name or (f'{seat["color"]} Bot' if is_bot else seat["color"]),
+        "name": player_name or (
+            f'{color_option["color"]} Bot' if is_bot else color_option["color"]
+        ),
         "settingsPlayerKey": settings_player_key,
         "token": None if is_bot else secrets.token_urlsafe(16),
         "pieces": make_piece_set(),
@@ -129,7 +136,7 @@ def normalize_game_settings(settings):
         )
 
     players = {}
-    for index in range(1, len(PLAYER_COLORS) + 1):
+    for index in range(1, MAX_PLAYERS + 1):
         player_key = f"Player {index}"
         supplied_player = settings.players.get(player_key)
         players[player_key] = {
@@ -166,6 +173,7 @@ def create_game_state(game_id, settings):
         "nextPlayerNumber": 1,
         "notice": None,
         "winnerId": None,
+        "winnerIds": [],
         "leaderboard": [],
     }
 
@@ -203,6 +211,7 @@ def game_snapshot(game):
         "moveHistory": game["moveHistory"],
         "status": game["status"],
         "winnerId": game["winnerId"],
+        "winnerIds": game.get("winnerIds", []),
         "leaderboard": game["leaderboard"],
         "availableColors": [
             seat for seat in PLAYER_COLORS
@@ -259,10 +268,11 @@ def start_game_if_ready(game):
         for player_settings in game["settings"]["players"].values()
         if player_settings["color"] is not None
     }
-    available_seats = [
-        seat for seat in PLAYER_COLORS
-        if seat["color"] not in used_colors
+    available_colors = [
+        color_option for color_option in PLAYER_COLORS
+        if color_option["color"] not in used_colors
     ]
+    random.shuffle(available_colors)
     runtime_player_keys = {
         player["settingsPlayerKey"]
         for player in game["players"]
@@ -272,25 +282,27 @@ def start_game_if_ready(game):
         if not player_settings["isBot"] or player_key in runtime_player_keys:
             continue
 
-        seat = available_seats.pop(0)
-        player_settings["color"] = seat["color"]
+        color_option = available_colors.pop(0)
+        player_settings["color"] = color_option["color"]
+        player_slot_index = list(game["settings"]["players"]).index(player_key)
         player_number = game["nextPlayerNumber"]
         game["nextPlayerNumber"] += 1
         game["players"].append(
             make_runtime_player(
-                seat,
+                color_option,
+                PLAYER_CORNERS[player_slot_index],
                 player_number,
                 settings_player_key=player_key,
                 is_bot=True,
             )
         )
 
-    clockwise_color_order = {
-        seat["color"]: index
-        for index, seat in enumerate(PLAYER_COLORS)
+    player_slot_order = {
+        player_key: index
+        for index, player_key in enumerate(game["settings"]["players"])
     }
     game["players"].sort(
-        key=lambda player: clockwise_color_order[player["color"]]
+        key=lambda player: player_slot_order[player["settingsPlayerKey"]]
     )
     game["currentTurnIndex"] = choose_starting_player_index(len(game["players"]))
     game["status"] = "playing"
@@ -489,20 +501,42 @@ def make_leaderboard(game):
         for player in game["players"]
     ]
     leaderboard.sort(key=lambda entry: entry["blocksPlaced"], reverse=True)
+
+    previous_score = None
+    current_rank = 0
+    for index, entry in enumerate(leaderboard):
+        if entry["blocksPlaced"] != previous_score:
+            current_rank = index + 1
+            previous_score = entry["blocksPlaced"]
+        entry["rank"] = current_rank
+
     return leaderboard
 
 
 def finish_game(game):
     leaderboard = make_leaderboard(game)
-    winner = leaderboard[0] if leaderboard else None
+    winning_score = leaderboard[0]["blocksPlaced"] if leaderboard else None
+    winners = [
+        entry for entry in leaderboard
+        if entry["blocksPlaced"] == winning_score
+    ]
 
     game["status"] = "finished"
-    game["winnerId"] = winner["playerId"] if winner else None
+    game["winnerId"] = winners[0]["playerId"] if len(winners) == 1 else None
+    game["winnerIds"] = [winner["playerId"] for winner in winners]
     game["leaderboard"] = leaderboard
     game["currentTurnIndex"] = 0
     game["turnEndsAt"] = None
-    if winner:
+    if len(winners) == 1:
+        winner = winners[0]
         game["notice"] = f'Game over. {winner["name"]} won with {winner["blocksPlaced"]} blocks.'
+    elif winners:
+        names = [winner["name"] for winner in winners]
+        if len(names) == 2:
+            winner_names = " and ".join(names)
+        else:
+            winner_names = f'{", ".join(names[:-1])}, and {names[-1]}'
+        game["notice"] = f"Game over. Tie between {winner_names} with {winning_score} blocks."
     else:
         game["notice"] = "Game over."
 
@@ -775,16 +809,20 @@ async def join_game(game_id: str, request: JoinRequest):
         if game["adminPlayerId"] is not None:
             raise HTTPException(status_code=409, detail="This game already has an admin.")
 
-    if len(game["players"]) >= len(PLAYER_COLORS):
+    if len(game["players"]) >= MAX_PLAYERS:
         raise HTTPException(status_code=409, detail="This game already has four players.")
 
-    seat = next(
-        (deepcopy(seat) for seat in PLAYER_COLORS if seat["color"].lower() == request.color.lower()),
+    color_option = next(
+        (
+            deepcopy(option)
+            for option in PLAYER_COLORS
+            if option["color"].lower() == request.color.lower()
+        ),
         None,
     )
-    if not seat:
+    if not color_option:
         raise HTTPException(status_code=400, detail="Choose one of the available colors.")
-    if any(player["color"] == seat["color"] for player in game["players"]):
+    if any(player["color"] == color_option["color"] for player in game["players"]):
         raise HTTPException(status_code=409, detail="That color has already been chosen.")
 
     player_number = game["nextPlayerNumber"]
@@ -800,8 +838,10 @@ async def join_game(game_id: str, request: JoinRequest):
     if settings_player_key is None:
         raise HTTPException(status_code=409, detail="All human player slots are filled.")
 
+    player_slot_index = list(game["settings"]["players"]).index(settings_player_key)
     player = make_runtime_player(
-        seat,
+        color_option,
+        PLAYER_CORNERS[player_slot_index],
         player_number,
         settings_player_key=settings_player_key,
         player_name=player_name,
@@ -843,12 +883,13 @@ async def restart_game(game_id: str, request: RestartRequest):
     if game["status"] != "finished":
         raise HTTPException(status_code=409, detail="Only finished games can be restarted.")
 
-    winner_id = game["winnerId"]
+    winner_id = game["winnerId"] or next(iter(game.get("winnerIds", [])), None)
     game["board"] = Board()
     game["moveHistory"] = []
     game["status"] = "playing"
     game["hasStarted"] = True
     game["winnerId"] = None
+    game["winnerIds"] = []
     game["leaderboard"] = []
 
     for joined_player in game["players"]:

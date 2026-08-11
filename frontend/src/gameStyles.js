@@ -75,7 +75,7 @@ const gameStyles = () => ({
 	},
 
 	waitingGameVeil: {
-		position: 'fixed',
+		position: 'absolute',
 		inset: 0,
 		zIndex: 4,
 		background: 'rgba(8, 4, 14, 0.32)',
@@ -284,19 +284,18 @@ const gameStyles = () => ({
 		},
 	},
 
-	playerInfoPanelStage: {
+	chooseColorPanel: {
+		position: 'relative',
+		width: 750,
+		maxWidth: 'calc(100vw - 32px)',
+	},
+
+	chooseNamePanel: {
 		position: 'relative',
 		width: 750,
 		height: 430,
 		maxWidth: 'calc(100vw - 32px)',
 		overflow: 'hidden',
-	},
-
-	playerInfoPanel: {
-		position: 'absolute',
-		inset: 0,
-		width: '100%',
-		height: '100%',
 	},
 
 	playerNameForm: {
@@ -433,13 +432,16 @@ const gameStyles = () => ({
 	},
 
 	colorOptions: {
-		display: 'flex',
-		flexDirection: 'row',
-		gap: 16,
+		display: 'grid',
+		gridTemplateColumns: 'repeat(4, 150px)',
+		gap: 12,
 		marginBottom: 18,
 		justifyContent: 'center',
 		alignItems: 'center',
-		flexWrap: 'nowrap',
+
+		'& button, & svg': {
+			display: 'block',
+		},
 	},
 
 	settingsPanel: {
@@ -920,13 +922,6 @@ const gameStyles = () => ({
 		lineHeight: 1.05,
 	},
 
-	winnerSubtitle: {
-		marginTop: 7,
-		color: '#c5bddb',
-		fontSize: 14,
-		fontWeight: 800,
-	},
-
 	leaderboardList: {
 		display: 'flex',
 		flexDirection: 'column',
@@ -946,6 +941,12 @@ const gameStyles = () => ({
 		borderRadius: 8,
 		background: 'rgba(19, 12, 30, 0.78)',
 		textAlign: 'left',
+	},
+
+	leaderboardTiedLeader: {
+		borderColor: 'rgba(195, 151, 255, 0.58)',
+		background: 'linear-gradient(90deg, rgba(123, 75, 181, 0.2), rgba(19, 12, 30, 0.78))',
+		boxShadow: 'inset 3px 0 0 var(--leader-color)',
 	},
 
 	leaderboardRank: {
@@ -986,6 +987,20 @@ const gameStyles = () => ({
 		fontWeight: 800,
 		textAlign: 'right',
 		whiteSpace: 'nowrap',
+	},
+
+	tieLabel: {
+		marginLeft: 'auto',
+		padding: '3px 6px',
+		border: '1px solid rgba(195, 151, 255, 0.42)',
+		borderRadius: 999,
+		background: 'rgba(140, 91, 207, 0.18)',
+		color: '#d8bcff',
+		fontSize: 9,
+		fontStyle: 'normal',
+		fontWeight: 900,
+		letterSpacing: 0.7,
+		textTransform: 'uppercase',
 	},
 
 	piecePanelHeader: {

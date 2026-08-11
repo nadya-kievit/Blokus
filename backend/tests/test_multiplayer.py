@@ -96,18 +96,18 @@ def test_starting_player_is_random_and_turns_then_move_clockwise():
     game = games[game_id]
 
     assert [player["color"] for player in game["players"]] == [
-        "Blue",
-        "Red",
         "Green",
+        "Blue",
         "Yellow",
+        "Red",
     ]
-    assert game["players"][game["currentTurnIndex"]]["color"] == "Green"
-
-    main_module.advance_turn(game)
     assert game["players"][game["currentTurnIndex"]]["color"] == "Yellow"
 
     main_module.advance_turn(game)
-    assert game["players"][game["currentTurnIndex"]]["color"] == "Blue"
+    assert game["players"][game["currentTurnIndex"]]["color"] == "Red"
+
+    main_module.advance_turn(game)
+    assert game["players"][game["currentTurnIndex"]]["color"] == "Green"
 
 
 def test_game_uses_six_digit_invite_code_and_players_choose_colors():
@@ -119,6 +119,29 @@ def test_game_uses_six_digit_invite_code_and_players_choose_colors():
     assert red.json()["name"] == "Red"
     assert red.json()["color"] == "Red"
     assert duplicate.status_code == 409
+
+
+def test_game_offers_eight_colors_but_still_uses_four_player_corners():
+    game_id = client.post("/games").json()["gameId"]
+    initial_state = client.get(f"/games/{game_id}").json()
+
+    assert [option["color"] for option in initial_state["availableColors"]] == [
+        "Blue", "Red", "Green", "Yellow", "Pink", "Purple", "Cyan", "Orange",
+    ]
+
+    for color in ["Pink", "Purple", "Cyan", "Orange"]:
+        response = client.post(f"/games/{game_id}/join", json={"color": color})
+        assert response.status_code == 200
+
+    state = client.get(f"/games/{game_id}").json()
+    corners = {
+        (player["corner"]["row"], player["corner"]["col"])
+        for player in state["players"]
+    }
+
+    assert state["status"] == "playing"
+    assert len(state["players"]) == 4
+    assert len(corners) == 4
 
 
 def test_joined_player_name_is_trimmed_and_shared_in_game_state():
@@ -300,9 +323,12 @@ def test_configured_bots_receive_remaining_colors_and_can_make_valid_moves():
         True,
         True,
     ]
-    assert {
-        player["color"] for player in game["players"]
-    } == {seat["color"] for seat in main_module.PLAYER_COLORS}
+    assigned_colors = {player["color"] for player in game["players"]}
+    assert len(assigned_colors) == 4
+    assert "Blue" in assigned_colors
+    assert assigned_colors <= {
+        option["color"] for option in main_module.PLAYER_COLORS
+    }
 
     game["currentTurnIndex"] = 1
     bot = game["players"][1]
@@ -324,7 +350,7 @@ def test_configured_bots_receive_remaining_colors_and_can_make_valid_moves():
 
 
 def test_bot_turn_waits_then_places_a_piece(monkeypatch):
-    main_module.choose_starting_player_index = lambda _player_count: 1
+    main_module.choose_starting_player_index = lambda _player_count: 0
     created_game = client.post(
         "/games",
         json={
@@ -589,8 +615,47 @@ def test_game_finishes_with_leaderboard_when_everyone_is_out_of_moves():
 
     assert state["status"] == "finished"
     assert state["leaderboard"][0]["name"] == "Yellow"
+    assert state["leaderboard"][0]["rank"] == 1
     assert state["winnerId"] == game["players"][3]["id"]
+    assert state["winnerIds"] == [game["players"][3]["id"]]
     assert state["currentPlayerId"] is None
+
+
+def test_game_finishes_as_a_tie_when_leaders_have_the_same_score():
+    game_id, _ = create_joined_game()
+    game = games[game_id]
+
+    for player in game["players"][:2]:
+        player["pieces"][0]["placed"] = True
+
+    finish_game(game)
+    state = client.get(f"/games/{game_id}").json()
+
+    expected_winner_ids = [player["id"] for player in game["players"][:2]]
+    assert state["winnerId"] is None
+    assert state["winnerIds"] == expected_winner_ids
+    assert [entry["rank"] for entry in state["leaderboard"]] == [1, 1, 3, 3]
+    assert "Tie between Blue and Red with 5 blocks" in state["notice"]
+
+
+def test_tied_game_restarts_with_a_tied_leader_first():
+    game_id, players = create_joined_game()
+    game = games[game_id]
+
+    for player in game["players"][:2]:
+        player["pieces"][0]["placed"] = True
+
+    finish_game(game)
+    response = client.post(
+        f"/games/{game_id}/restart",
+        json={"playerId": players[2]["playerId"], "playerToken": players[2]["playerToken"]},
+    )
+    state = response.json()
+
+    assert response.status_code == 200
+    assert state["currentPlayerId"] == players[0]["playerId"]
+    assert state["winnerId"] is None
+    assert state["winnerIds"] == []
 
 
 def test_finished_game_can_restart_with_same_players_and_winner_first():

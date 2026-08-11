@@ -10,8 +10,8 @@ const useStyles = makeStyles()(gameStyles)
 
 function PlayerInfoScreen({ gameId, initialGame, onJoined, onBack }) {
 	const { classes } = useStyles()
-	const storageKey = `blokus-player-${gameId}`
-	const adminToken = localStorage.getItem(`blokus-admin-${gameId}`)
+	const storageKey = `blokit-player-${gameId}`
+	const adminToken = localStorage.getItem(`blokit-admin-${gameId}`)
 	const [game, setGame] = useState(initialGame)
 	const [step, setStep] = useState('color')
 	const [selectedColor, setSelectedColor] = useState(null)
@@ -83,77 +83,74 @@ function PlayerInfoScreen({ gameId, initialGame, onJoined, onBack }) {
 
 	return (
 		<div className={classes.startPage}>
-			<h1 className={classes.gameTitle}>Blokus</h1>
+			<h1 className={classes.gameTitle}>Blokit</h1>
+				{step === 'color' ? (
+					<div className={clsx(classes.startPanel, classes.chooseColorPanel)}>
+						<div className={classes.inviteLabel}>Invite code</div>
+						<div className={classes.inviteCode}>{gameId}</div>
 
-			<div className={classes.playerInfoPanelStage}>
-					{step === 'color' ? (
-						<div className={clsx(classes.startPanel, classes.playerInfoPanel)}>
+						<h2>Choose your color</h2>
+
+						{!game && !lastMessage && (
+							<p>Loading available colors...</p>
+						)}
+
+						{game && (
+							<div className={classes.colorOptions}>
+								{game.availableColors.map(option => (
+									<PieceBagButton
+										key={option.color}
+										name={option.color}
+										color={getPlayerColorHex(option.color)}
+										size={150}
+										onClick={() => handleChooseColor(option.color)}
+									/>
+								))}
+							</div>
+						)}
+
+						<button className={classes.textButton} onClick={onBack}>
+							Back
+						</button>
+
+						{lastMessage && (
+							<div className={clsx(classes.statusMessage, classes.statusMessageError)}>
+								{lastMessage}
+							</div>
+						)}
+					</div>
+				) : (
+					<div className={clsx(classes.startPanel, classes.chooseNamePanel, classes.playerInfoPanelStage)}>
+						<form className={classes.playerNameForm} onSubmit={handleJoinGame}>
 							<div className={classes.inviteLabel}>Invite code</div>
 							<div className={classes.inviteCode}>{gameId}</div>
 
-							<h2>Choose your color</h2>
+							<div className={classes.playerNameFields}>
+								<h2>Set your player name</h2>
 
-							{!game && !lastMessage && (
-								<p>Loading available colors...</p>
-							)}
+								<input
+									type="text"
+									value={playerName}
+									onChange={event => setPlayerName(event.target.value)}
+									className={classes.playerNameInput}
+									placeholder="Enter player name"
+									maxLength={24}
+									autoFocus
+								/>
+							</div>
 
-							{game && (
-								<div className={classes.colorOptions}>
-									{game.availableColors.map(option => (
-										<PieceBagButton
-											key={option.color}
-											name={option.color}
-											color={getPlayerColorHex(option.color)}
-											size={150}
-											onClick={() => handleChooseColor(option.color)}
-										/>
-									))}
-								</div>
-							)}
+							<div className={classes.playerInfoActions}>
+								<button type="button" className={classes.textButton} onClick={handleBackToColors}>
+									Back
+								</button>
 
-							<button className={classes.textButton} onClick={onBack}>
-								Back
-							</button>
-
-							{lastMessage && (
-								<div className={clsx(classes.statusMessage, classes.statusMessageError)}>
-									{lastMessage}
-								</div>
-							)}
-						</div>
-					) : (
-						<div className={clsx(classes.startPanel, classes.playerInfoPanel)}>
-							<form className={classes.playerNameForm} onSubmit={handleJoinGame}>
-								<div className={classes.inviteLabel}>Invite code</div>
-								<div className={classes.inviteCode}>{gameId}</div>
-
-								<div className={classes.playerNameFields}>
-									<h2>Set your player name</h2>
-
-									<input
-										type="text"
-										value={playerName}
-										onChange={event => setPlayerName(event.target.value)}
-										className={classes.playerNameInput}
-										placeholder="Enter player name"
-										maxLength={24}
-										autoFocus
-									/>
-								</div>
-
-								<div className={classes.playerInfoActions}>
-									<button type="button" className={classes.textButton} onClick={handleBackToColors}>
-										Back
-									</button>
-
-									<button type="submit" disabled={isJoining || !playerName.trim()}>
-										{isJoining ? 'Joining...' : 'Join Game'}
-									</button>
-								</div>
-							</form>
-						</div>
-					)}
-			</div>
+								<button type="submit" disabled={isJoining || !playerName.trim()}>
+									{isJoining ? 'Joining...' : 'Join Game'}
+								</button>
+							</div>
+						</form>
+					</div>
+				)}
 		</div>
 	)
 }

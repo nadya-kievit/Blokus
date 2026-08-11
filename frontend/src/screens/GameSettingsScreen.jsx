@@ -49,7 +49,7 @@ function GameSettingsScreen({ onCreateRoom, onBack }) {
 	
 	return (
 		<div className={classes.startPage}>
-			<h1 className={classes.gameTitle}>Blokus</h1>
+			<h1 className={classes.gameTitle}>Blokit</h1>
 
 			<div className={clsx(classes.startPanel, classes.settingsPanel)}>
 				<h2>Game settings</h2>
