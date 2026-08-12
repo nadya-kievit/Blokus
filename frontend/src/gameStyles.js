@@ -46,14 +46,15 @@ const gameStyles = () => ({
 		display: 'flex',
 		flexDirection: 'column',
 		gap: 18,
-		overflow: 'hidden',
+		overflow: 'auto',
 		position: 'relative',
 	},
 
 	gameMain: {
 		flex: 1,
 		minHeight: 0,
-		width: '100%',
+		minWidth: 1886,
+		width: 1886,
 		position: 'relative',
 		display: 'flex',
 		alignItems: 'center',
