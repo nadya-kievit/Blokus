@@ -1,12 +1,7 @@
 import clsx from 'clsx'
-import { makeStyles } from 'tss-react/mui'
-import gameStyles from '../gameStyles'
 import { getPlayerColorHex } from '../playerColors'
 
-const useStyles = makeStyles()(gameStyles)
-
 function Tile({value, row, col, viewRow, viewCol, onClick, onHover, isHovered, neighbors, hoverNeighbors}) {
-	const { classes } = useStyles()
 
 	const isOccupied = value.occupied
 	const occupiedColor = getPlayerColorHex(value.color)
@@ -25,7 +20,7 @@ function Tile({value, row, col, viewRow, viewCol, onClick, onHover, isHovered, n
 
 	return (
 		<div
-			className={clsx(classes.tile, (isOccupied) && classes.glassPieceTile)}
+			className={clsx('tile', (isOccupied) && 'glassPieceTile')}
 			onClick={handleClick}
 			onPointerEnter={event => onHover(row, col, viewRow, viewCol,
 				event.nativeEvent.offsetX / event.currentTarget.clientWidth,

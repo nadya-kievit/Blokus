@@ -1,15 +1,9 @@
 import { useEffect, useState } from 'react'
-import { makeStyles } from 'tss-react/mui'
-import clsx from 'clsx'
 import { getGame, joinGame } from '../services/api'
-import gameStyles from '../gameStyles'
 import PieceBagButton from '../components/PieceBagButton'
 import { getPlayerColorHex } from '../playerColors'
 
-const useStyles = makeStyles()(gameStyles)
-
 function PlayerInfoScreen({ gameId, initialGame, onJoined, onBack }) {
-	const { classes } = useStyles()
 	const storageKey = `blokit-player-${gameId}`
 	const adminToken = localStorage.getItem(`blokit-admin-${gameId}`)
 	const [game, setGame] = useState(initialGame)
@@ -82,12 +76,12 @@ function PlayerInfoScreen({ gameId, initialGame, onJoined, onBack }) {
 	}
 
 	return (
-		<div className={classes.startPage}>
-			<h1 className={classes.gameTitle}>Blokit</h1>
+		<div className="startPage">
+			<h1 className="gameTitle">Blokit</h1>
 				{step === 'color' ? (
-					<div className={clsx(classes.startPanel, classes.chooseColorPanel)}>
-						<div className={classes.inviteLabel}>Invite code</div>
-						<div className={classes.inviteCode}>{gameId}</div>
+					<div className="startPanel chooseColorPanel">
+						<div className="inviteLabel">Invite code</div>
+						<div className="inviteCode">{gameId}</div>
 
 						<h2>Choose your color</h2>
 
@@ -96,7 +90,7 @@ function PlayerInfoScreen({ gameId, initialGame, onJoined, onBack }) {
 						)}
 
 						{game && (
-							<div className={classes.colorOptions}>
+							<div className="colorOptions">
 								{game.availableColors.map(option => (
 									<PieceBagButton
 										key={option.color}
@@ -109,38 +103,38 @@ function PlayerInfoScreen({ gameId, initialGame, onJoined, onBack }) {
 							</div>
 						)}
 
-						<button className={classes.textButton} onClick={onBack}>
+						<button className="textButton" onClick={onBack}>
 							Back
 						</button>
 
 						{lastMessage && (
-							<div className={clsx(classes.statusMessage, classes.statusMessageError)}>
+							<div className="statusMessage statusMessageError">
 								{lastMessage}
 							</div>
 						)}
 					</div>
 				) : (
-					<div className={clsx(classes.startPanel, classes.chooseNamePanel, classes.playerInfoPanelStage)}>
-						<form className={classes.playerNameForm} onSubmit={handleJoinGame}>
-							<div className={classes.inviteLabel}>Invite code</div>
-							<div className={classes.inviteCode}>{gameId}</div>
+					<div className="startPanel chooseNamePanel">
+						<form className="playerNameForm" onSubmit={handleJoinGame}>
+							<div className="inviteLabel">Invite code</div>
+							<div className="inviteCode">{gameId}</div>
 
-							<div className={classes.playerNameFields}>
+							<div className="playerNameFields">
 								<h2>Set your player name</h2>
 
 								<input
 									type="text"
 									value={playerName}
 									onChange={event => setPlayerName(event.target.value)}
-									className={classes.playerNameInput}
+									className="playerNameInput"
 									placeholder="Enter player name"
 									maxLength={24}
 									autoFocus
 								/>
 							</div>
 
-							<div className={classes.playerInfoActions}>
-								<button type="button" className={classes.textButton} onClick={handleBackToColors}>
+							<div className="playerInfoActions">
+								<button type="button" className="textButton" onClick={handleBackToColors}>
 									Back
 								</button>
 

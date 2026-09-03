@@ -1,10 +1,5 @@
-import { makeStyles } from 'tss-react/mui'
-import gameStyles from '../gameStyles'
-
-const useStyles = makeStyles()(gameStyles)
 
 function PieceBagButton({ name, color, size = 170, disabled = false, onClick }) {
-	const { classes } = useStyles()
 
 	const gridCells = []
 
@@ -48,7 +43,7 @@ function PieceBagButton({ name, color, size = 170, disabled = false, onClick }) 
 	return (
 		<button
 			type="button"
-			className={classes.bagButton}
+			className="bagButton"
 			disabled={disabled}
 			onClick={onClick}
 			aria-label={`Choose ${name}`}

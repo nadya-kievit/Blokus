@@ -1,17 +1,12 @@
 import { useState } from 'react'
-import { makeStyles } from 'tss-react/mui'
 import clsx from 'clsx'
 import { createGame } from '../services/api'
-import gameStyles from '../gameStyles'
-
-const useStyles = makeStyles()(gameStyles)
 
 const TIME_LIMITS = ['No limit', '30s', '60s', '90s']
 const PLAYERS = ['Player 1', 'Player 2', 'Player 3', 'Player 4']
 
 
 function GameSettingsScreen({ onCreateRoom, onBack }) {
-	const { classes } = useStyles()
 	const [timeLimit, setTimeLimit] = useState('60s')
 	const [playerTypes, setPlayerTypes] = useState({
 		'Player 1': 'Human',
@@ -48,22 +43,22 @@ function GameSettingsScreen({ onCreateRoom, onBack }) {
 
 	
 	return (
-		<div className={classes.startPage}>
-			<h1 className={classes.gameTitle}>Blokit</h1>
+		<div className="startPage">
+			<h1 className="gameTitle">Blokit</h1>
 
-			<div className={clsx(classes.startPanel, classes.settingsPanel)}>
+			<div className="startPanel settingsPanel">
 				<h2>Game settings</h2>
 
-				<section className={classes.settingsSection}>
+				<section className="settingsSection">
 					<h3>Time limit per move</h3>
-					<div className={classes.timeLimitOptions}>
+					<div className="timeLimitOptions">
 						{TIME_LIMITS.map(option => (
 							<button
 								key={option}
 								type="button"
 								className={clsx(
-									classes.settingsOption,
-									timeLimit === option && classes.settingsOptionSelected,
+									'settingsOption',
+									timeLimit === option && 'settingsOptionSelected',
 								)}
 								aria-pressed={timeLimit === option}
 								onClick={() => setTimeLimit(option)}
@@ -74,12 +69,12 @@ function GameSettingsScreen({ onCreateRoom, onBack }) {
 					</div>
 				</section>
 
-				<section className={classes.settingsSection}>
+				<section className="settingsSection">
 					<h3>Player type</h3>
-					<div className={classes.playerTypeList}>
+					<div className="playerTypeList">
 						{PLAYERS.map(player => (
-							<div className={classes.playerTypeRow} key={player}>
-								<div className={classes.settingsPlayerName}>
+							<div className="playerTypeRow" key={player}>
+								<div className="settingsPlayerName">
 									{player}
 								</div>
 
@@ -89,9 +84,9 @@ function GameSettingsScreen({ onCreateRoom, onBack }) {
 									aria-checked={playerTypes[player] === 'Bot'}
 									aria-label={`${player} type: ${playerTypes[player]}`}
 									className={clsx(
-										classes.playerTypeToggle,
+										'playerTypeToggle',
 										playerTypes[player] === 'Bot' &&
-											classes.playerTypeToggleBot,
+											'playerTypeToggleBot',
 									)}
 									onClick={() =>
 										handlePlayerTypeChange(
@@ -109,8 +104,8 @@ function GameSettingsScreen({ onCreateRoom, onBack }) {
 					</div>
 				</section>
 
-				<div className={classes.settingsActions}>
-					<button type="button" className={classes.textButton} onClick={onBack}>
+				<div className="settingsActions">
+					<button type="button" className="textButton" onClick={onBack}>
 						Back
 					</button>
 					<button type="button" onClick={handleCreateRoom} disabled={isCreating}>
@@ -119,7 +114,7 @@ function GameSettingsScreen({ onCreateRoom, onBack }) {
 				</div>
 
 				{error && (
-					<div className={clsx(classes.statusMessage, classes.statusMessageError)}>
+					<div className="statusMessage statusMessageError">
 						{error}
 					</div>
 				)}

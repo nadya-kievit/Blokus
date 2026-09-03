@@ -1,16 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useLayoutEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, LayoutGroup, motion } from 'motion/react'
-import { makeStyles } from 'tss-react/mui'
 import clsx from 'clsx'
 import { gameSocketUrl, getGame, quitGame, restartGame } from '../services/api'
-import gameStyles from '../gameStyles'
 import Board from '../components/Board'
 import Piece from '../components/Piece'
 import CursorPiece from '../components/CursorPiece'
 import { PLAYER_COLORS, PLAYER_COLOR_HEX, getPlayerColorHex } from '../playerColors'
-
-const useStyles = makeStyles()(gameStyles)
 
 const BOARD_SIZE = 20
 const EMPTY_BOARD = Array(BOARD_SIZE).fill(null).map(() =>
@@ -238,7 +234,6 @@ function TrophyIcon() {
 
 
 function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
-	const { classes } = useStyles()
 
 	const storageKey = `blokit-player-${gameId}`
 	const socketRef = useRef(null)
@@ -788,14 +783,14 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 
 	if (!game) {
 		return (
-			<div className={classes.startPage}>
-				<h1 className={classes.gameTitle}>Blokit</h1>
+			<div className="startPage">
+				<h1 className="gameTitle">Blokit</h1>
 
-				<div className={classes.startPanel}>
+				<div className="startPanel">
 					<h2>Loading game...</h2>
 
 					{lastMessage && (
-						<div className={clsx(classes.statusMessage, classes.statusMessageError)}>
+						<div className="statusMessage statusMessageError">
 							{lastMessage}
 						</div>
 					)}
@@ -816,28 +811,27 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 				rotation={selectedPiece.rotation}
 				flipped={selectedPiece.flipped}
 				color={me?.color}
-				classes={classes}
 				cursorRef={cursorPieceRef}
 				position={cursorPosition}
 			/>,
 			document.body
 		)}
 
-		<div className={classes.gamePage}>
+		<div className="gamePage">
 
-			<header className={classes.gameHeader}>
-				<div className={classes.gameBrand}>
-					<h1 className={clsx(classes.gameTitle, classes.gameHeaderTitle)}>
+			<header className="gameHeader">
+				<div className="gameBrand">
+					<h1 className="gameTitle gameHeaderTitle">
 						Blokit
 					</h1>
 				</div>
-				<div className={classes.gameActions}>
-					<div className={classes.headerCode}>
+				<div className="gameActions">
+					<div className="headerCode">
 						Code <strong>{gameId}</strong>
 					</div>
 
 					<button
-						className={clsx(classes.headerActionButton, classes.copyButton)}
+						className="headerActionButton copyButton"
 						onClick={handleCopyInvite}
 					>
 						<svg aria-hidden="true" viewBox="0 0 24 24">
@@ -849,7 +843,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 					</button>
 
 					<button
-						className={clsx(classes.headerActionButton, classes.dangerButton)}
+						className="headerActionButton dangerButton"
 						onClick={handleQuit}
 						disabled={isQuitting}
 					>
@@ -863,14 +857,14 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 				</div>
 			</header>
 
-			<div ref={gameMainRef} className={classes.gameMain}>
+			<div ref={gameMainRef} className="gameMain">
 				{isWaitingForPlayers && (
-					<div className={classes.waitingGameVeil} aria-hidden="true" />
+					<div className="waitingGameVeil" aria-hidden="true" />
 				)}
 
-				<aside ref={playersPanelRef} className={classes.playersLeftPanel}>
+				<aside ref={playersPanelRef} className="playersLeftPanel">
 					<LayoutGroup id="player-rankings">
-						<div className={classes.playerPanelGrid}>
+						<div className="playerPanelGrid">
 						{playerProgress.map(progress => {
 							const isActiveTurn = progress.player?.id === game.currentPlayerId
 							const isExpanded = progress.player?.id === expandedPlayerId
@@ -880,9 +874,9 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 								<motion.div
 									key={progress.name}
 									layout="position"
-									className={clsx(classes.playerStatusCard, {
-										[classes.playerStatusActive]: isActiveTurn,
-										[classes.playerStatusEmpty]: !progress.player,
+									className={clsx('playerStatusCard', {
+										playerStatusActive: isActiveTurn,
+										playerStatusEmpty: !progress.player,
 									})}
 									style={{ '--player-color': progress.color }}
 									transition={{
@@ -894,20 +888,20 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 										},
 									}}
 								>
-									<div className={classes.playerStatusHeader}>
-										<div className={classes.playerStatusName}>
-											<span className={classes.playerStatusColor} />
+									<div className="playerStatusHeader">
+										<div className="playerStatusName">
+											<span className="playerStatusColor" />
 											{progress.player?.name || progress.name}
 										</div>
 									</div>
 
-									<div className={classes.playerStatusBody}>
+									<div className="playerStatusBody">
 										<div>
-											<div className={classes.playerStatusBlocks}>
+											<div className="playerStatusBlocks">
 												{progress.placedBlocks}
 											</div>
 
-											<div className={classes.playerStatusCaption}>
+											<div className="playerStatusCaption">
 												blocks placed
 											</div>
 										</div>
@@ -915,7 +909,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 										{progress.player && progress.player.id !== me?.id && (
 											<button
 												type="button"
-												className={classes.viewPiecesButton}
+												className="viewPiecesButton"
 												aria-expanded={isExpanded}
 												onClick={() => !isWaitingForPlayers && setExpandedPlayerId(currentId =>
 													currentId === progress.player.id ? null : progress.player.id
@@ -930,8 +924,8 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 										{isExpanded && (
 											<motion.div
 												className={clsx(
-													classes.playerRemainingPieces,
-													remainingPieces.length > 15 && classes.playerRemainingPiecesScrollable,
+													'playerRemainingPieces',
+													remainingPieces.length > 15 && 'playerRemainingPiecesScrollable',
 												)}
 												initial={{ height: 0, opacity: 0 }}
 												animate={{ height: 'auto', opacity: 1 }}
@@ -964,28 +958,28 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 				<div
 					ref={boardCenterRef}
 					className={clsx(
-						classes.boardCenter,
-						isWaitingForPlayers && classes.boardCenterWaiting,
+						'boardCenter',
+						isWaitingForPlayers && 'boardCenterWaiting',
 					)}
 				>
-					<div className={classes.turnBannerSlot}>
+					<div className="turnBannerSlot">
 						<AnimatePresence mode="wait" initial={false}>
 							{(game?.status === 'playing' || isFinished) && (
 								<motion.div
 									key={isFinished ? `finished-${game?.winnerIds?.join('-') || game?.winnerId}` : game?.currentPlayerId}
-									className={clsx(classes.turnBanner, isFinished && classes.finishedBanner)}
+									className={clsx('turnBanner', isFinished && 'finishedBanner')}
 									style={{ '--turn-color': isFinished ? resultColor : getPlayerColorHex(currentPlayer?.color, PLAYER_COLOR_HEX.Yellow) }}
 									initial={{ opacity: 0, y: -4 }}
 									animate={{ opacity: 1, y: 0 }}
 									exit={{ opacity: 0, y: 4 }}
 									transition={{ duration: 0.18, ease: 'easeOut' }}
 								>
-							<div className={classes.turnAvatar} aria-hidden="true">
+							<div className="turnAvatar" aria-hidden="true">
 								{isFinished ? <TrophyIcon /> : turnPlayer?.isBot ? <RobotIcon /> : <PersonIcon />}
 							</div>
 
-							<div className={classes.turnText}>
-								<div className={classes.turnTitle}>
+							<div className="turnText">
+								<div className="turnTitle">
 									{isFinished
 										? isTie ? 'It\'s a tie!' : `${winner?.name || 'A player'} won!`
 										: canMove ? 'Your Turn!' : currentPlayer?.name + '\'s Turn'}
@@ -994,14 +988,14 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 									<TurnTimer
 										key={game.turnNumber}
 										endsAt={game.turnEndsAt}
-										className={classes.turnTimer}
+										className="turnTimer"
 									/>
 								)}
 							</div>
 
 							{isFinished && (
 								<button
-									className={classes.restartButton}
+									className="restartButton"
 									onClick={handleRestart}
 									disabled={isRestarting}
 								>
@@ -1018,7 +1012,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 						</AnimatePresence>
 					</div>
 
-					<div ref={boardFrameRef} className={classes.boardFrame}>
+					<div ref={boardFrameRef} className="boardFrame">
 						<Board
 							board={board}
 							boardRotation={boardRotation}
@@ -1030,10 +1024,10 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 						/>
 
 						{isWaitingForPlayers && (
-							<div className={classes.boardLockOverlay}>
-								<div className={classes.readyDial}>
+							<div className="boardLockOverlay">
+								<div className="readyDial">
 									<svg
-										className={classes.readyRingSvg}
+										className="readyRingSvg"
 										viewBox="0 0 220 220"
 										aria-hidden="true"
 									>
@@ -1049,7 +1043,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 													cx="110"
 													cy="110"
 													r="90"
-													className={classes.readyArc}
+													className="readyArc"
 													strokeDasharray={`${segmentLength} ${circumference - segmentLength}`}
 													transform={`rotate(${rotation} 110 110)`}
 													style={{
@@ -1070,8 +1064,8 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 													cx={110 + 90 * Math.cos(angle)}
 													cy={110 + 90 * Math.sin(angle)}
 													r="12"
-													className={clsx(classes.readySeatDot, {
-														[classes.readySeatDotFilled]: Boolean(slot.color),
+													className={clsx('readySeatDot', {
+														readySeatDotFilled: Boolean(slot.color),
 													})}
 													style={{ '--seat-color': slot.color || '#40374e' }}
 												/>
@@ -1079,15 +1073,15 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 										})}
 									</svg>
 
-									<div className={classes.readyContent}>
+									<div className="readyContent">
 
-										<div className={classes.readyCount}>
+										<div className="readyCount">
 											{readyCount} of {requiredPlayers}
 										</div>
 
-										<div className={classes.readyLabel}>players ready</div>
+										<div className="readyLabel">players ready</div>
 
-										<div className={classes.readyMessage}>
+										<div className="readyMessage">
 											Waiting for more
 											<br />
 											players...
@@ -1099,13 +1093,13 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 					</div>
 				</div>
 
-				<div className={classes.piecesRight}>
-					<div className={classes.piecePanelHeader}>
-						<div className={classes.currentPlayerDetails}>
+				<div className="piecesRight">
+					<div className="piecePanelHeader">
+						<div className="currentPlayerDetails">
 
-							<div className={classes.panelPlayerName}>
+							<div className="panelPlayerName">
 								<span
-									className={classes.panelPlayerColor}
+									className="panelPlayerColor"
 									style={{ background: getPlayerColorHex(me?.color) }}
 								/>
 
@@ -1113,8 +1107,8 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 							</div>
 						</div>
 
-						<div className={classes.placementHint}>
-							<span className={classes.hintPieceIcon} />
+						<div className="placementHint">
+							<span className="hintPieceIcon" />
 
 							<span>
 								Click a piece to
@@ -1124,7 +1118,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 						</div>
 					</div>
 
-					<div data-game-piece className={classes.pieceCardGrid}>
+					<div data-game-piece className="pieceCardGrid">
 						<AnimatePresence mode="popLayout" initial={false}>
 						{availablePieces.map(piece => {
 							const isPlayable = playablePieceNames.has(piece.name)
@@ -1133,7 +1127,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 							<motion.div
 								key={piece.name}
 								layout
-								className={classes.pieceGridItem}
+								className="pieceGridItem"
 								initial={{ opacity: 0, scale: 0.9 }}
 								animate={{ opacity: 1, scale: 1 }}
 								exit={{ opacity: 0, scale: 0.82 }}
@@ -1173,17 +1167,17 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 						</AnimatePresence>
 					</div>
 
-					<div className={classes.piecesRemaining}>
+					<div className="piecesRemaining">
 						<div>
 							Pieces remaining:{' '}
 							<strong>{remainingPieceCount}</strong>
 						</div>
 
-						<div className={classes.remainingDots} aria-hidden="true">
+						<div className="remainingDots" aria-hidden="true">
 							{Array.from({ length: pieces.length }).map((_, index) => (
 								<span
 									key={index}
-									className={index < remainingPieceCount ? classes.unused : classes.used}
+									className={index < remainingPieceCount ? 'unused' : 'used'}
 									style={{ '--piece-color': getPlayerColorHex(me?.color) }}
 								/>
 							))}
@@ -1193,10 +1187,10 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 			</div>
 
 			{isFinished && !isWinnerModalClosed && (
-				<div className={classes.modalBackdrop}>
-					<div className={classes.winnerModal}>
+				<div className="modalBackdrop">
+					<div className="winnerModal">
 						<button
-							className={classes.modalCloseButton}
+							className="modalCloseButton"
 							onClick={() => setClosedWinnerTurnNumber(game?.turnNumber)}
 							aria-label="Close winner summary"
 						>
@@ -1207,7 +1201,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 						</button>
 
 						<div
-							className={classes.winnerBadge}
+							className="winnerBadge"
 							style={{ '--winner-color': resultColor }}
 						>
 							<svg aria-hidden="true" viewBox="0 0 24 24">
@@ -1216,28 +1210,28 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 							</svg>
 						</div>
 
-						<div className={classes.winnerTitle}>
+						<div className="winnerTitle">
 							{isTie ? 'It\'s a tie!' : `${winner?.name || 'A player'} won!`}
 						</div>
 
-						<div className={classes.leaderboardList}>
+						<div className="leaderboardList">
 							{leaderboard.map(entry => (
 								<div
 									key={entry.playerId}
-									className={clsx(classes.leaderboardRow, isTie && entry.rank === 1 && classes.leaderboardTiedLeader)}
+									className={clsx('leaderboardRow', isTie && entry.rank === 1 && 'leaderboardTiedLeader')}
 									style={{ '--leader-color': getPlayerColorHex(entry.color) }}
 								>
-									<div className={classes.leaderboardRank}>
+									<div className="leaderboardRank">
 										{entry.rank}
 									</div>
 
-									<div className={classes.leaderboardName}>
+									<div className="leaderboardName">
 										<span />
 										{entry.name}
-										{isTie && entry.rank === 1 && <em className={classes.tieLabel}>Tied</em>}
+										{isTie && entry.rank === 1 && <em className="tieLabel">Tied</em>}
 									</div>
 
-									<div className={classes.leaderboardBlocks}>
+									<div className="leaderboardBlocks">
 										{entry.blocksPlaced} blocks
 									</div>
 								</div>

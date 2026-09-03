@@ -1,13 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { makeStyles } from 'tss-react/mui'
-import clsx from 'clsx'
 import { wakeGameServer } from '../services/api'
-import gameStyles from '../gameStyles'
-
-const useStyles = makeStyles()(gameStyles)
 
 function CreateGameScreen({ onEnterGame, onConfigureGame }) {
-	const { classes } = useStyles()
 	const [inviteCode, setInviteCode] = useState('')
 	const [error, setError] = useState('')
 	const codeInputRefs = useRef([])
@@ -81,10 +75,10 @@ function CreateGameScreen({ onEnterGame, onConfigureGame }) {
 
 	
 	return (
-		<div className={classes.startPage}>
-			<h1 className={classes.gameTitle}>Blokit</h1>
+		<div className="startPage">
+			<h1 className="gameTitle">Blokit</h1>
 
-			<div className={classes.startPanel} style={{width: '500px'}}>
+			<div className="startPanel" style={{width: '500px'}}>
 				<h2>Play online</h2>
 
 				<p>Create a new room or join friends with their 6 digit invite code.</p>
@@ -93,12 +87,12 @@ function CreateGameScreen({ onEnterGame, onConfigureGame }) {
 					Create Game
 				</button>
 
-				<div className={classes.startDivider}>
+				<div className="startDivider">
 					<span>or</span>
 				</div>
 
-				<form className={classes.joinForm} onSubmit={handleJoinGame}>
-					<div className={classes.codeInputGroup} aria-label="6 digit invite code">
+				<form className="joinForm" onSubmit={handleJoinGame}>
+					<div className="codeInputGroup" aria-label="6 digit invite code">
 						{Array.from({ length: 6 }).map((_, index) => (
 							<input
 								key={index}
@@ -123,7 +117,7 @@ function CreateGameScreen({ onEnterGame, onConfigureGame }) {
 				</form>
 
 				{error && (
-					<div className={clsx(classes.statusMessage, classes.statusMessageError)}>
+					<div className="statusMessage statusMessageError">
 						{error}
 					</div>
 				)}

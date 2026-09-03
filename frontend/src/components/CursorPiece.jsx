@@ -1,11 +1,6 @@
-import { makeStyles } from 'tss-react/mui'
-import gameStyles from '../gameStyles'
 import { getPlayerColorHex } from '../playerColors'
 
-const useStyles = makeStyles()(gameStyles)
-
 function CursorPiece({ piece, rotation, flipped, color, cursorRef, position }) {
-	const { classes } = useStyles()
 	const size = 35
 	const activeColor = getPlayerColorHex(color)
 	const innerBorder = '1px solid transparent'
@@ -58,7 +53,7 @@ function CursorPiece({ piece, rotation, flipped, color, cursorRef, position }) {
 			{rotatedCells.map((cell, index) => (
 				<div
 					key={index}
-					className={classes.glassPieceTile}
+					className="glassPieceTile"
 					style={{
 						position: 'absolute',
 						boxSizing: 'border-box',

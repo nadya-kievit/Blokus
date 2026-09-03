@@ -1,12 +1,7 @@
 import clsx from 'clsx'
-import { makeStyles } from 'tss-react/mui'
-import gameStyles from '../gameStyles'
 import { getPlayerColorHex } from '../playerColors'
 
-const useStyles = makeStyles()(gameStyles)
-
 function Piece({ piece, isWaitingForPlayers, placed, isSelected, isPlayable = true, disabled = false, onClick, rotation, flipped, color, displaySize }) {
-	const { classes } = useStyles()
 	const isInteractive = !isWaitingForPlayers && !placed && isPlayable && !disabled
 
     const size = 13
@@ -61,9 +56,9 @@ function Piece({ piece, isWaitingForPlayers, placed, isSelected, isPlayable = tr
     return (
         <div
             className={clsx(
-                isInteractive ? classes.pieceCard : classes.pieceCardNoHover,
-                placed && classes.placed,
-                isSelected && isInteractive && classes.selected,
+                isInteractive ? 'pieceCard' : 'pieceCardNoHover',
+                placed && 'placed',
+                isSelected && isInteractive && 'selected',
             )}
             onClick={isInteractive ? onClick : undefined}
             style={displaySize ? { width: displaySize, height: displaySize } : undefined}

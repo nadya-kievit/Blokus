@@ -1,11 +1,6 @@
 import Tile from './Tile'
-import { makeStyles } from 'tss-react/mui'
-import gameStyles from '../gameStyles'
-
-const useStyles = makeStyles()(gameStyles)
 
 function Board({board, boardRotation = 0, onTileClick, onTileHover, onBoardLeave, hoverCells, pendingPlacement}) {
-	const { classes } = useStyles()
 	const boardSize = board.length
 	const pendingCells = new Set(
 		(pendingPlacement?.cells || []).map(cell => `${cell.row},${cell.col}`)
@@ -52,7 +47,7 @@ function Board({board, boardRotation = 0, onTileClick, onTileHover, onBoardLeave
 	}
 
 	return (
-		<div className={classes.board} data-game-board onMouseLeave={onBoardLeave}>
+		<div className="board" data-game-board onMouseLeave={onBoardLeave}>
 			{displayedCells.map((row, viewRow) =>
 				row.map((cell, viewCol) => {
 					const neighbors = {
