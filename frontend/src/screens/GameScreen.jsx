@@ -6,6 +6,8 @@ import { gameSocketUrl, getGame, quitGame, restartGame } from '../services/api'
 import Board from '../components/Board'
 import Piece from '../components/Piece'
 import CursorPiece from '../components/CursorPiece'
+import Header from '../components/Header'
+import PiecePanel from '../components/PiecePanel'
 import { PLAYER_COLORS, PLAYER_COLOR_HEX, getPlayerColorHex } from '../playerColors'
 
 const BOARD_SIZE = 20
@@ -365,8 +367,6 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 		),
 		[pendingPlacement?.pieceName, pieces, playablePieceNames]
 	)
-	const remainingPieceCount = availablePieces.length
-
 	const winners = useMemo(() => {
 		const winnerIds = game?.winnerIds?.length
 			? game.winnerIds
@@ -686,6 +686,27 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 	}
 
 
+	const handlePieceClick = (piece, event) => {
+		const isPlayable = playablePieceNames.has(piece.name)
+
+		if (piece.placed || !canMove || !isPlayable) return
+
+		if (selectedPieceName === piece.name) {
+			setSelectedPieceName(null)
+			setHoverCells([])
+			lastHoverTargetRef.current = null
+			return
+		}
+
+		cursorPositionRef.current = {
+			x: event.clientX,
+			y: event.clientY,
+		}
+		setCursorPosition(cursorPositionRef.current)
+		setSelectedPieceName(piece.name)
+	}
+
+
 	const handleTileClick = () => {
 		if (!canMove || !selectedPiece || hoverCells.length === 0 || pendingPlacement) {
 			return
@@ -819,43 +840,12 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 
 		<div className="gamePage">
 
-			<header className="gameHeader">
-				<div className="gameBrand">
-					<h1 className="gameTitle gameHeaderTitle">
-						Blokit
-					</h1>
-				</div>
-				<div className="gameActions">
-					<div className="headerCode">
-						Code <strong>{gameId}</strong>
-					</div>
-
-					<button
-						className="headerActionButton copyButton"
-						onClick={handleCopyInvite}
-					>
-						<svg aria-hidden="true" viewBox="0 0 24 24">
-							<rect x="8" y="8" width="11" height="11" rx="2" />
-							<path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" />
-						</svg>
-
-						Copy Code
-					</button>
-
-					<button
-						className="headerActionButton dangerButton"
-						onClick={handleQuit}
-						disabled={isQuitting}
-					>
-						<svg aria-hidden="true" viewBox="0 0 24 24">
-							<path d="M10 5H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h4" />
-							<path d="M14 8l4 4-4 4M9 12h9" />
-						</svg>
-
-						{isQuitting ? 'Quitting...' : 'Quit Game'}
-					</button>
-				</div>
-			</header>
+			<Header
+				gameId={gameId}
+				isQuitting={isQuitting}
+				onCopyInvite={handleCopyInvite}
+				onQuit={handleQuit}
+			/>
 
 			<div ref={gameMainRef} className="gameMain">
 				{isWaitingForPlayers && (
@@ -1093,97 +1083,16 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 					</div>
 				</div>
 
-				<div className="piecesRight">
-					<div className="piecePanelHeader">
-						<div className="currentPlayerDetails">
-
-							<div className="panelPlayerName">
-								<span
-									className="panelPlayerColor"
-									style={{ background: getPlayerColorHex(me?.color) }}
-								/>
-
-								{me?.name || 'Joining...'}
-							</div>
-						</div>
-
-						<div className="placementHint">
-							<span className="hintPieceIcon" />
-
-							<span>
-								Click a piece to
-								<br />
-								see where it fits
-							</span>
-						</div>
-					</div>
-
-					<div data-game-piece className="pieceCardGrid">
-						<AnimatePresence mode="popLayout" initial={false}>
-						{availablePieces.map(piece => {
-							const isPlayable = playablePieceNames.has(piece.name)
-
-							return (
-							<motion.div
-								key={piece.name}
-								layout
-								className="pieceGridItem"
-								initial={{ opacity: 0, scale: 0.9 }}
-								animate={{ opacity: 1, scale: 1 }}
-								exit={{ opacity: 0, scale: 0.82 }}
-								transition={{ duration: 0.22, ease: 'easeOut' }}
-							>
-							<Piece
-								piece={piece}
-								isWaitingForPlayers={isWaitingForPlayers}
-								placed={piece.placed}
-								color={me?.color}
-								isSelected={isPlayable && selectedPieceName === piece.name}
-								isPlayable={isPlayable}
-								disabled={!canMove}
-								onClick={event => {
-									if (piece.placed || !canMove || !isPlayable) return
-
-									if (selectedPieceName === piece.name) {
-										setSelectedPieceName(null)
-										setHoverCells([])
-										lastHoverTargetRef.current = null
-										return
-									}
-
-									cursorPositionRef.current = {
-										x: event.clientX,
-										y: event.clientY,
-									}
-									setCursorPosition(cursorPositionRef.current)
-									setSelectedPieceName(piece.name)
-								}}
-								rotation={piece.rotation}
-								flipped={piece.flipped}
-							/>
-							</motion.div>
-							)
-						})}
-						</AnimatePresence>
-					</div>
-
-					<div className="piecesRemaining">
-						<div>
-							Pieces remaining:{' '}
-							<strong>{remainingPieceCount}</strong>
-						</div>
-
-						<div className="remainingDots" aria-hidden="true">
-							{Array.from({ length: pieces.length }).map((_, index) => (
-								<span
-									key={index}
-									className={index < remainingPieceCount ? 'unused' : 'used'}
-									style={{ '--piece-color': getPlayerColorHex(me?.color) }}
-								/>
-							))}
-						</div>
-					</div>
-				</div>
+				<PiecePanel
+					canMove={canMove}
+					isWaitingForPlayers={isWaitingForPlayers}
+					onPieceClick={handlePieceClick}
+					pieces={availablePieces}
+					playablePieceNames={playablePieceNames}
+					player={me}
+					selectedPieceName={selectedPieceName}
+					totalPieceCount={pieces.length}
+				/>
 			</div>
 
 			{isFinished && !isWinnerModalClosed && (
