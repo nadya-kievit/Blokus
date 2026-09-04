@@ -34,10 +34,10 @@ button:disabled {
 	min-height: 100vh;
 	width: 100%;
 	box-sizing: border-box;
-	padding: 14px 17px 24px;
+	padding: clamp(10px, 1.5vw, 18px) clamp(12px, 2vw, 32px) 24px;
 	display: flex;
 	flex-direction: column;
-	gap: 18px;
+	gap: clamp(14px, 2vh, 24px);
 	overflow: auto;
 	position: relative;
 }
@@ -45,25 +45,27 @@ button:disabled {
 .gameMain {
 	flex: 1;
 	min-height: 0;
-	min-width: 1886px;
-	width: 1886px;
+	min-width: 0;
+	width: 100%;
 	position: relative;
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	justify-content: center;
-	gap: 12px;
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+	grid-template-areas:
+		". turn ."
+		"players board pieces";
+	align-content: start;
+	align-items: start;
+	row-gap: 12px;
 }
 
 .piecesRight {
-	position: absolute;
-	right: 32px;
-	top: 50%;
-	transform: translateY(-50%);
+	grid-area: pieces;
+	justify-self: end;
+	align-self: center;
 	box-sizing: border-box;
-	width: 430px;
-	height: 100%;
+	width: min(430px, calc(100% - 32px));
 	max-height: 760px;
+	margin-right: clamp(16px, 2vw, 32px);
 	display: flex;
 	flex-direction: column;
 	overflow: hidden;
@@ -77,13 +79,13 @@ button:disabled {
 }
 
 .playerRankPanel {
-	position: absolute;
-	left: 32px;
-	top: 0;
+	grid-area: players;
+	justify-self: center;
+	align-self: start;
 	z-index: 2;
 	display: flex;
 	box-sizing: border-box;
-	width: 500px;
+	width: min(500px, calc(100% - 32px));
 	max-height: 760px;
 	flex-direction: column;
 	gap: 27px;
@@ -560,6 +562,7 @@ button:disabled {
 	gap: 24px;
 	box-sizing: border-box;
 	width: 100%;
+	margin-inline: auto;
 	min-height: 68px;
 	padding: 10px 12px 10px 21px;
 	border: 1px solid rgba(155, 113, 211, 0.26);
@@ -678,6 +681,11 @@ button:disabled {
 	color: #e5252a;
 	border-color: rgba(229, 37, 42, 0.12);
 	background: rgba(26, 17, 39, 0.9);
+}
+
+.turnBannerSlot {
+	grid-area: turn;
+	justify-self: center;
 }
 
 .turnBanner {
@@ -1186,6 +1194,8 @@ button:disabled {
 }
 
 .board {
+	grid-area: board;
+	justify-self: center;
 	display: grid;
 	grid-template-columns: repeat(20, 35px);
 	grid-template-rows: repeat(20, 35px);
@@ -1248,4 +1258,37 @@ button:disabled {
 	opacity: 0.55;
 	transform: none;
 	filter: none;
+}
+
+@media (max-width: 1700px) {
+	.gameMain {
+		grid-template-columns: minmax(0, 1fr);
+		grid-template-areas:
+			"players"
+			"turn"
+			"board"
+			"pieces";
+		justify-items: center;
+		row-gap: 20px;
+	}
+
+	.playerRankPanel {
+		justify-self: center;
+		width: min(100%, 728px);
+	}
+
+	.turnBannerSlot,
+	.board {
+		justify-self: center;
+	}
+
+	.piecesRight {
+		justify-self: center;
+		width: min(100%, 1300px);
+		margin-right: 0;
+	}
+
+	.pieceCardGrid {
+		grid-template-columns: repeat(11, 86px);
+	}
 }

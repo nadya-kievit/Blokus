@@ -52,7 +52,6 @@ function WinnerModal({ isOpen, isTie, leaderboard, onClose, resultColor, winner 
 							</div>
 
 							<div className="leaderboardName">
-								<span />
 								{entry.name}
 								{isTie && entry.rank === 1 && <em className="tieLabel">Tied</em>}
 							</div>

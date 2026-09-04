@@ -1,10 +1,14 @@
-import { forwardRef } from 'react'
 import Tile from './Tile'
 
-const Board = forwardRef(function Board(
-	{ board, boardRotation = 0, onTileClick, onTileHover, onBoardLeave, hoverCells, pendingPlacement },
-	ref,
-) {
+function Board({
+	board,
+	boardRotation = 0,
+	onTileClick,
+	onTileHover,
+	onBoardLeave,
+	hoverCells,
+	pendingPlacement,
+}) {
 	const boardSize = board.length
 	const pendingCells = new Set(
 		(pendingPlacement?.cells || []).map(cell => `${cell.row},${cell.col}`)
@@ -51,7 +55,7 @@ const Board = forwardRef(function Board(
 	}
 
 	return (
-		<div ref={ref} className="board" data-game-board onMouseLeave={onBoardLeave}>
+		<div className="board" data-game-board onMouseLeave={onBoardLeave}>
 			{displayedCells.map((row, viewRow) =>
 				row.map((cell, viewCol) => {
 					const neighbors = {
@@ -90,6 +94,6 @@ const Board = forwardRef(function Board(
 			)}
 		</div>
 	)
-})
+}
 
 export default Board

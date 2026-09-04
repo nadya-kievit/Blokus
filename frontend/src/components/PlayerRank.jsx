@@ -1,4 +1,4 @@
-import { forwardRef, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { AnimatePresence, LayoutGroup, motion } from 'motion/react'
 import clsx from 'clsx'
 import { getPlayerColorHex } from '../playerColors'
@@ -18,7 +18,7 @@ function totalBlockCount(player) {
 	)
 }
 
-const PlayerRank = forwardRef(function PlayerRank({ currentUserId, game }, ref) {
+function PlayerRank({ currentUserId, game }) {
 	const [expandedPlayerId, setExpandedPlayerId] = useState(null)
 	const isWaitingForPlayers = game?.status === 'waiting'
 
@@ -53,7 +53,7 @@ const PlayerRank = forwardRef(function PlayerRank({ currentUserId, game }, ref) 
 	}
 
 	return (
-		<div ref={ref} className="playerRankPanel">
+		<div className="playerRankPanel">
 			<LayoutGroup id="player-rankings">
 				<div className="playerPanelGrid">
 					{playerProgress.map(progress => {
@@ -149,6 +149,6 @@ const PlayerRank = forwardRef(function PlayerRank({ currentUserId, game }, ref) 
 			</LayoutGroup>
 		</div>
 	)
-})
+}
 
 export default PlayerRank

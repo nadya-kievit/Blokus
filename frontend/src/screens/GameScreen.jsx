@@ -163,9 +163,6 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 
 	const storageKey = `blokit-player-${gameId}`
 	const socketRef = useRef(null)
-	const gameMainRef = useRef(null)
-	const playersPanelRef = useRef(null)
-	const boardRef = useRef(null)
 	const lastHoverTargetRef = useRef(null)
 	const cursorPieceRef = useRef(null)
 	const cursorPositionRef = useRef({ x: 0, y: 0 })
@@ -411,34 +408,6 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 			window.removeEventListener('keydown', handleKeyDown)
 		}
 	}, [canMove, selectedPiece])
-
-
-	useLayoutEffect(() => {
-		const gameMain = gameMainRef.current
-		const playersPanel = playersPanelRef.current
-		const board = boardRef.current
-
-		if (!gameMain || !playersPanel || !board) return
-
-		const alignPlayerPanel = () => {
-			const gameMainBounds = gameMain.getBoundingClientRect()
-			const boardBounds = board.getBoundingClientRect()
-
-			playersPanel.style.top = `${boardBounds.top - gameMainBounds.top}px`
-		}
-
-		alignPlayerPanel()
-
-		const resizeObserver = new ResizeObserver(alignPlayerPanel)
-		resizeObserver.observe(gameMain)
-		resizeObserver.observe(board)
-		window.addEventListener('resize', alignPlayerPanel)
-
-		return () => {
-			resizeObserver.disconnect()
-			window.removeEventListener('resize', alignPlayerPanel)
-		}
-	}, [game?.status])
 
 
 	useLayoutEffect(() => {
@@ -719,11 +688,10 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 				onQuit={handleQuit}
 			/>
 
-			<div ref={gameMainRef} className="gameMain">
+			<div className="gameMain">
 				{isWaitingForPlayers && <WaitingOverlay game={game} />}
 
 				<PlayerRank
-					ref={playersPanelRef}
 					currentUserId={me?.id}
 					game={game}
 				/>
@@ -739,7 +707,6 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 				/>
 
 				<Board
-					ref={boardRef}
 					board={board}
 					boardRotation={boardRotation}
 					onTileClick={handleTileClick}
