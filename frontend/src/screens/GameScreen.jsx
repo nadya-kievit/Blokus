@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useLayoutEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { AnimatePresence, LayoutGroup, motion } from 'motion/react'
-import clsx from 'clsx'
 import { gameSocketUrl, getGame, quitGame, restartGame } from '../services/api'
 import Board from '../components/Board'
-import Piece from '../components/Piece'
 import CursorPiece from '../components/CursorPiece'
 import Header from '../components/Header'
 import PiecePanel from '../components/PiecePanel'
-import { PLAYER_COLORS, PLAYER_COLOR_HEX, getPlayerColorHex } from '../playerColors'
+import PlayerRank from '../components/PlayerRank'
+import TurnBanner from '../components/TurnBanner'
+import WaitingOverlay from '../components/WaitingOverlay'
+import WinnerModal from '../components/WinnerModal'
+import { PLAYER_COLOR_HEX, getPlayerColorHex } from '../playerColors'
 
 const BOARD_SIZE = 20
 const EMPTY_BOARD = Array(BOARD_SIZE).fill(null).map(() =>
@@ -60,19 +61,6 @@ function rotationForCorner(corner) {
 	if (corner.row === BOARD_SIZE - 1 && corner.col === 0) return 270
 
 	return 0
-}
-
-
-function placedBlockCount(player) {
-	return (player?.pieces || []).reduce(
-		(total, piece) => 
-			total + (piece.placed ? piece.cells.length : 0), 0
-	)
-}
-
-
-function totalBlockCount(player) {
-	return (player?.pieces || []).reduce((total, piece) => total + piece.cells.length, 0)
 }
 
 
@@ -171,78 +159,13 @@ function nextPieceOrientations(rotation, flipped) {
 }
 
 
-function secondsUntil(timestamp) {
-	return Math.max(0, Math.ceil((timestamp - Date.now()) / 1000))
-}
-
-
-function TurnTimer({ endsAt, className }) {
-	const [remainingSeconds, setRemainingSeconds] = useState(() => secondsUntil(endsAt))
-
-	useEffect(() => {
-		const intervalId = window.setInterval(() => {
-			const nextRemainingSeconds = secondsUntil(endsAt)
-
-			setRemainingSeconds(currentSeconds =>
-				currentSeconds === nextRemainingSeconds ? currentSeconds : nextRemainingSeconds
-			)
-		}, 250)
-
-		return () => window.clearInterval(intervalId)
-	}, [endsAt])
-
-	return (
-		<div className={className}>
-			{Math.floor(remainingSeconds / 60)}:
-			{String(remainingSeconds % 60).padStart(2, '0')}
-		</div>
-	)
-}
-
-
-function PersonIcon() {
-	return (
-		<svg viewBox="0 0 24 24">
-			<circle cx="12" cy="8" r="4" />
-			<path d="M5.5 20a6.5 6.5 0 0 1 13 0" />
-		</svg>
-	)
-}
-
-
-function RobotIcon() {
-	return (
-		<svg viewBox="0 0 24 24">
-			<path d="M12 5V3" fill="none" />
-			<circle cx="12" cy="2.25" r="1.25" stroke="none" />
-			<rect x="5" y="6" width="14" height="13" rx="3" fill="none" />
-			<path d="M5 10H4a2.5 2.5 0 0 0 0 5h1M19 10h1a2.5 2.5 0 0 1 0 5h-1" fill="none" />
-			<circle cx="9" cy="11.5" r="1.3" stroke="none" />
-			<circle cx="15" cy="11.5" r="1.3" stroke="none" />
-			<path d="M9.5 16h5" fill="none" />
-		</svg>
-	)
-}
-
-
-function TrophyIcon() {
-	return (
-		<svg viewBox="0 0 24 24">
-			<path d="M8 4h8v4a4 4 0 0 1-8 0V4Z" fill="none" />
-			<path d="M8 6H5v1a4 4 0 0 0 4 4M16 6h3v1a4 4 0 0 1-4 4M12 12v5M8 20h8M10 17h4" fill="none" />
-		</svg>
-	)
-}
-
-
 function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 
 	const storageKey = `blokit-player-${gameId}`
 	const socketRef = useRef(null)
 	const gameMainRef = useRef(null)
 	const playersPanelRef = useRef(null)
-	const boardCenterRef = useRef(null)
-	const boardFrameRef = useRef(null)
+	const boardRef = useRef(null)
 	const lastHoverTargetRef = useRef(null)
 	const cursorPieceRef = useRef(null)
 	const cursorPositionRef = useRef({ x: 0, y: 0 })
@@ -264,16 +187,10 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 	const [isQuitting, setIsQuitting] = useState(false)
 	const [isRestarting, setIsRestarting] = useState(false)
 	const [closedWinnerTurnNumber, setClosedWinnerTurnNumber] = useState(null)
-	const [expandedPlayerId, setExpandedPlayerId] = useState(null)
 
 	const me = useMemo(() => 
 		game?.players.find(player => player.id === credentials?.playerId),
 		[game, credentials]
-	)
-
-	const currentPlayer = useMemo(() => 
-		game?.players.find(player => player.id === game.currentPlayerId),
-		[game]
 	)
 
 	const canMove = game?.status === 'playing' && game.currentPlayerId === credentials?.playerId
@@ -381,56 +298,8 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 	const resultColor = winners.length > 1
 		? `linear-gradient(135deg, ${winners.map(player => getPlayerColorHex(player.color)).join(', ')})`
 		: getPlayerColorHex(winner?.color, PLAYER_COLOR_HEX.Yellow)
-	const turnPlayer = isFinished && !isTie ? winner : currentPlayer
-
 	const leaderboard = game?.leaderboard || []
-
-	const readyCount = game?.players.length || 0
-	const readySlots = useMemo(() => {
-		const configuredPlayers = Object.entries(game?.settings?.players || {})
-			.filter(([, player]) => !player.isBot)
-
-		if (!configuredPlayers.length) {
-			return PLAYER_COLORS.slice(0, 4).map(seat => ({
-				key: seat.name,
-				color: game?.players.some(player => player.color === seat.name)
-					? seat.hex
-					: null,
-			}))
-		}
-
-		return configuredPlayers.map(([key, player]) => ({
-			key,
-			color: getPlayerColorHex(player.color, null),
-		}))
-	}, [game])
-	const requiredPlayers = readySlots.length
 	const isWaitingForPlayers = game?.status === 'waiting'
-
-	const playerProgress = useMemo(() => {
-			const knownTotalBlocks = totalBlockCount(game?.players[0])
-
-			return Object.keys(game?.settings?.players || {}).map((playerKey, originalIndex) => {
-				const player = game?.players.find(joinedPlayer => joinedPlayer.settingsPlayerKey === playerKey)
-				const placedBlocks = placedBlockCount(player)
-				const totalBlocks = player ? totalBlockCount(player) : knownTotalBlocks
-
-				return {
-					name: player?.color || playerKey,
-					color: getPlayerColorHex(player?.color),
-					player,
-					placedBlocks,
-					totalBlocks,
-					progress: totalBlocks > 0 ? placedBlocks / totalBlocks : 0,
-					originalIndex,
-				}
-			}).sort((first, second) =>
-				second.placedBlocks - first.placedBlocks ||
-				first.originalIndex - second.originalIndex
-			)
-		},
-		[game]
-	)
 
 	useEffect(() => {
 		if (game && !credentials) {
@@ -547,14 +416,13 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 	useLayoutEffect(() => {
 		const gameMain = gameMainRef.current
 		const playersPanel = playersPanelRef.current
-		const boardCenter = boardCenterRef.current
-		const boardFrame = boardFrameRef.current
+		const board = boardRef.current
 
-		if (!gameMain || !playersPanel || !boardCenter || !boardFrame) return
+		if (!gameMain || !playersPanel || !board) return
 
 		const alignPlayerPanel = () => {
 			const gameMainBounds = gameMain.getBoundingClientRect()
-			const boardBounds = boardFrame.getBoundingClientRect()
+			const boardBounds = board.getBoundingClientRect()
 
 			playersPanel.style.top = `${boardBounds.top - gameMainBounds.top}px`
 		}
@@ -563,7 +431,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 
 		const resizeObserver = new ResizeObserver(alignPlayerPanel)
 		resizeObserver.observe(gameMain)
-		resizeObserver.observe(boardCenter)
+		resizeObserver.observe(board)
 		window.addEventListener('resize', alignPlayerPanel)
 
 		return () => {
@@ -707,6 +575,11 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 	}
 
 
+	const handleCloseWinnerModal = () => {
+		setClosedWinnerTurnNumber(game?.turnNumber)
+	}
+
+
 	const handleTileClick = () => {
 		if (!canMove || !selectedPiece || hoverCells.length === 0 || pendingPlacement) {
 			return
@@ -824,22 +697,21 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 		return null
 	}
 
-	return (<>
-
-		{selectedPiece && createPortal(
-			<CursorPiece
-				piece={selectedPiece}
-				rotation={selectedPiece.rotation}
-				flipped={selectedPiece.flipped}
-				color={me?.color}
-				cursorRef={cursorPieceRef}
-				position={cursorPosition}
-			/>,
-			document.body
-		)}
-
+	return (
 		<div className="gamePage">
 
+			{selectedPiece && createPortal(
+				<CursorPiece
+					piece={selectedPiece}
+					rotation={selectedPiece.rotation}
+					flipped={selectedPiece.flipped}
+					color={me?.color}
+					cursorRef={cursorPieceRef}
+					position={cursorPosition}
+				/>,
+				document.body
+			)}
+			
 			<Header
 				gameId={gameId}
 				isQuitting={isQuitting}
@@ -848,240 +720,34 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 			/>
 
 			<div ref={gameMainRef} className="gameMain">
-				{isWaitingForPlayers && (
-					<div className="waitingGameVeil" aria-hidden="true" />
-				)}
+				{isWaitingForPlayers && <WaitingOverlay game={game} />}
 
-				<aside ref={playersPanelRef} className="playersLeftPanel">
-					<LayoutGroup id="player-rankings">
-						<div className="playerPanelGrid">
-						{playerProgress.map(progress => {
-							const isActiveTurn = progress.player?.id === game.currentPlayerId
-							const isExpanded = progress.player?.id === expandedPlayerId
-							const remainingPieces = progress.player?.pieces.filter(piece => !piece.placed) || []
+				<PlayerRank
+					ref={playersPanelRef}
+					currentUserId={me?.id}
+					game={game}
+				/>
 
-							return (
-								<motion.div
-									key={progress.name}
-									layout="position"
-									className={clsx('playerStatusCard', {
-										playerStatusActive: isActiveTurn,
-										playerStatusEmpty: !progress.player,
-									})}
-									style={{ '--player-color': progress.color }}
-									transition={{
-										layout: {
-											type: 'spring',
-											stiffness: 220,
-											damping: 28,
-											mass: 0.8,
-										},
-									}}
-								>
-									<div className="playerStatusHeader">
-										<div className="playerStatusName">
-											<span className="playerStatusColor" />
-											{progress.player?.name || progress.name}
-										</div>
-									</div>
+				<TurnBanner
+					canMove={canMove}
+					game={game}
+					isRestarting={isRestarting}
+					isTie={isTie}
+					onRestart={handleRestart}
+					resultColor={resultColor}
+					winner={winner}
+				/>
 
-									<div className="playerStatusBody">
-										<div>
-											<div className="playerStatusBlocks">
-												{progress.placedBlocks}
-											</div>
-
-											<div className="playerStatusCaption">
-												blocks placed
-											</div>
-										</div>
-
-										{progress.player && progress.player.id !== me?.id && (
-											<button
-												type="button"
-												className="viewPiecesButton"
-												aria-expanded={isExpanded}
-												onClick={() => !isWaitingForPlayers && setExpandedPlayerId(currentId =>
-													currentId === progress.player.id ? null : progress.player.id
-												)}
-											>
-												{isExpanded ? 'Hide Pieces' : 'View Pieces'}
-											</button>
-										)}
-									</div>
-
-									<AnimatePresence initial={false}>
-										{isExpanded && (
-											<motion.div
-												className={clsx(
-													'playerRemainingPieces',
-													remainingPieces.length > 15 && 'playerRemainingPiecesScrollable',
-												)}
-												initial={{ height: 0, opacity: 0 }}
-												animate={{ height: 'auto', opacity: 1 }}
-												exit={{ height: 0, opacity: 0 }}
-												transition={{ duration: 0.28, ease: 'easeOut' }}
-											>
-												{remainingPieces.map(piece => (
-													<Piece
-														key={piece.name}
-														piece={piece}
-														isWaitingForPlayers
-														placed={false}
-														isSelected={false}
-														rotation={0}
-														flipped={false}
-														color={progress.color}
-														displaySize={80}
-													/>
-												))}
-											</motion.div>
-										)}
-									</AnimatePresence>
-								</motion.div>
-							)
-						})}
-						</div>
-					</LayoutGroup>
-				</aside>
-
-				<div
-					ref={boardCenterRef}
-					className={clsx(
-						'boardCenter',
-						isWaitingForPlayers && 'boardCenterWaiting',
-					)}
-				>
-					<div className="turnBannerSlot">
-						<AnimatePresence mode="wait" initial={false}>
-							{(game?.status === 'playing' || isFinished) && (
-								<motion.div
-									key={isFinished ? `finished-${game?.winnerIds?.join('-') || game?.winnerId}` : game?.currentPlayerId}
-									className={clsx('turnBanner', isFinished && 'finishedBanner')}
-									style={{ '--turn-color': isFinished ? resultColor : getPlayerColorHex(currentPlayer?.color, PLAYER_COLOR_HEX.Yellow) }}
-									initial={{ opacity: 0, y: -4 }}
-									animate={{ opacity: 1, y: 0 }}
-									exit={{ opacity: 0, y: 4 }}
-									transition={{ duration: 0.18, ease: 'easeOut' }}
-								>
-							<div className="turnAvatar" aria-hidden="true">
-								{isFinished ? <TrophyIcon /> : turnPlayer?.isBot ? <RobotIcon /> : <PersonIcon />}
-							</div>
-
-							<div className="turnText">
-								<div className="turnTitle">
-									{isFinished
-										? isTie ? 'It\'s a tie!' : `${winner?.name || 'A player'} won!`
-										: canMove ? 'Your Turn!' : currentPlayer?.name + '\'s Turn'}
-								</div>
-								{game?.turnEndsAt != null && (
-									<TurnTimer
-										key={game.turnNumber}
-										endsAt={game.turnEndsAt}
-										className="turnTimer"
-									/>
-								)}
-							</div>
-
-							{isFinished && (
-								<button
-									className="restartButton"
-									onClick={handleRestart}
-									disabled={isRestarting}
-								>
-									<svg aria-hidden="true" viewBox="0 0 24 24">
-										<path d="M3 12a9 9 0 1 0 3-6.7" />
-										<path d="M3 4v5h5" />
-									</svg>
-
-									{isRestarting ? 'Starting...' : 'New Game'}
-								</button>
-							)}
-								</motion.div>
-							)}
-						</AnimatePresence>
-					</div>
-
-					<div ref={boardFrameRef} className="boardFrame">
-						<Board
-							board={board}
-							boardRotation={boardRotation}
-							onTileClick={handleTileClick}
-							onTileHover={handleTileHover}
-							onBoardLeave={handleBoardLeave}
-							hoverCells={hoverCells}
-							pendingPlacement={pendingPlacement}
-						/>
-
-						{isWaitingForPlayers && (
-							<div className="boardLockOverlay">
-								<div className="readyDial">
-									<svg
-										className="readyRingSvg"
-										viewBox="0 0 220 220"
-										aria-hidden="true"
-									>
-										{readySlots.map((slot, index) => {
-											const circumference = 2 * Math.PI * 90
-											const gap = 10
-											const segmentLength = circumference / requiredPlayers - gap
-											const rotation = -90 + index * (360 / requiredPlayers)
-
-											return (
-												<circle
-													key={slot.key}
-													cx="110"
-													cy="110"
-													r="90"
-													className="readyArc"
-													strokeDasharray={`${segmentLength} ${circumference - segmentLength}`}
-													transform={`rotate(${rotation} 110 110)`}
-													style={{
-														'--seat-color': slot.color || '#40374e',
-													}}
-												/>
-											)
-										})}
-
-										{readySlots.map((slot, index) => {
-											const angle = (
-												-90 + (index + 0.5) * (360 / requiredPlayers)
-											) * Math.PI / 180
-
-											return (
-												<circle
-													key={`${slot.key}-dot`}
-													cx={110 + 90 * Math.cos(angle)}
-													cy={110 + 90 * Math.sin(angle)}
-													r="12"
-													className={clsx('readySeatDot', {
-														readySeatDotFilled: Boolean(slot.color),
-													})}
-													style={{ '--seat-color': slot.color || '#40374e' }}
-												/>
-											)
-										})}
-									</svg>
-
-									<div className="readyContent">
-
-										<div className="readyCount">
-											{readyCount} of {requiredPlayers}
-										</div>
-
-										<div className="readyLabel">players ready</div>
-
-										<div className="readyMessage">
-											Waiting for more
-											<br />
-											players...
-										</div>
-									</div>
-								</div>
-							</div>
-						)}
-					</div>
-				</div>
+				<Board
+					ref={boardRef}
+					board={board}
+					boardRotation={boardRotation}
+					onTileClick={handleTileClick}
+					onTileHover={handleTileHover}
+					onBoardLeave={handleBoardLeave}
+					hoverCells={hoverCells}
+					pendingPlacement={pendingPlacement}
+				/>
 
 				<PiecePanel
 					canMove={canMove}
@@ -1095,62 +761,16 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 				/>
 			</div>
 
-			{isFinished && !isWinnerModalClosed && (
-				<div className="modalBackdrop">
-					<div className="winnerModal">
-						<button
-							className="modalCloseButton"
-							onClick={() => setClosedWinnerTurnNumber(game?.turnNumber)}
-							aria-label="Close winner summary"
-						>
-							<svg aria-hidden="true" viewBox="0 0 24 24">
-								<path d="M18 6 6 18" />
-								<path d="m6 6 12 12" />
-							</svg>
-						</button>
-
-						<div
-							className="winnerBadge"
-							style={{ '--winner-color': resultColor }}
-						>
-							<svg aria-hidden="true" viewBox="0 0 24 24">
-								<path d="M6 9 8 20h8l2-11-4 3-2-6-2 6-4-3Z" />
-								<path d="M8 20h8" />
-							</svg>
-						</div>
-
-						<div className="winnerTitle">
-							{isTie ? 'It\'s a tie!' : `${winner?.name || 'A player'} won!`}
-						</div>
-
-						<div className="leaderboardList">
-							{leaderboard.map(entry => (
-								<div
-									key={entry.playerId}
-									className={clsx('leaderboardRow', isTie && entry.rank === 1 && 'leaderboardTiedLeader')}
-									style={{ '--leader-color': getPlayerColorHex(entry.color) }}
-								>
-									<div className="leaderboardRank">
-										{entry.rank}
-									</div>
-
-									<div className="leaderboardName">
-										<span />
-										{entry.name}
-										{isTie && entry.rank === 1 && <em className="tieLabel">Tied</em>}
-									</div>
-
-									<div className="leaderboardBlocks">
-										{entry.blocksPlaced} blocks
-									</div>
-								</div>
-							))}
-						</div>
-					</div>
-				</div>
-			)}
+			<WinnerModal
+				isOpen={isFinished && !isWinnerModalClosed}
+				isTie={isTie}
+				leaderboard={leaderboard}
+				onClose={handleCloseWinnerModal}
+				resultColor={resultColor}
+				winner={winner}
+			/>
 		</div>
-	</>)
+	)
 }
 
 export default GameScreen

@@ -49,32 +49,10 @@ button:disabled {
 	width: 1886px;
 	position: relative;
 	display: flex;
-	align-items: center;
-	justify-content: center;
-}
-
-.boardCenter {
-	position: relative;
-	z-index: 1;
-	display: flex;
 	flex-direction: column;
 	align-items: center;
 	justify-content: center;
 	gap: 12px;
-}
-
-.boardCenterWaiting {
-	z-index: 5;
-}
-
-.waitingGameVeil {
-	position: absolute;
-	inset: 0;
-	z-index: 4;
-	background: rgba(8, 4, 14, 0.32);
-	backdrop-filter: blur(1px);
-	-webkit-backdrop-filter: blur(1px);
-	pointer-events: none;
 }
 
 .piecesRight {
@@ -98,15 +76,15 @@ button:disabled {
 	-webkit-backdrop-filter: blur(12px);
 }
 
-.playersLeftPanel {
+.playerRankPanel {
 	position: absolute;
 	left: 32px;
 	top: 0;
 	z-index: 2;
+	display: flex;
+	box-sizing: border-box;
 	width: 500px;
 	max-height: 760px;
-	box-sizing: border-box;
-	display: flex;
 	flex-direction: column;
 	gap: 27px;
 }
@@ -1118,19 +1096,13 @@ button:disabled {
 	box-shadow: none !important;
 }
 
-.boardFrame {
-	position: relative;
-	width: fit-content;
-}
-
-.boardLockOverlay {
+.waitingOverlay {
 	position: absolute;
 	inset: 0;
 	z-index: 6;
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	border-radius: 18px;
 	background: rgba(8, 4, 14, 0.32);
 	backdrop-filter: blur(1px);
 	-webkit-backdrop-filter: blur(1px);
