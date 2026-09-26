@@ -65,6 +65,9 @@ function PiecePanel({
 									onClick={event => onPieceClick(piece, event)}
 									rotation={piece.rotation}
 									flipped={piece.flipped}
+									displaySize={86}
+									cellSize={18}
+									bare
 								/>
 							</motion.div>
 						)

@@ -1,10 +1,10 @@
 import clsx from 'clsx'
 import { getPlayerColorHex } from '../playerColors'
 
-function Piece({ piece, isWaitingForPlayers, placed, isSelected, isPlayable = true, disabled = false, onClick, rotation, flipped, color, displaySize }) {
+function Piece({ piece, isWaitingForPlayers, placed, isSelected, isPlayable = true, disabled = false, onClick, rotation, flipped, color, displaySize, cellSize = 10, bare = false }) {
 	const isInteractive = !isWaitingForPlayers && !placed && isPlayable && !disabled
 
-    const size = 13
+    const size = cellSize
     const cardSize = displaySize || 72
     const activeColor = getPlayerColorHex(color)
     const innerBorder = '1px solid rgba(0, 45, 120, 0.75)'
@@ -57,6 +57,7 @@ function Piece({ piece, isWaitingForPlayers, placed, isSelected, isPlayable = tr
         <div
             className={clsx(
                 isInteractive ? 'pieceCard' : 'pieceCardNoHover',
+                bare && 'pieceCardBare',
                 placed && 'placed',
                 isSelected && isInteractive && 'selected',
             )}

@@ -53,7 +53,7 @@ button:disabled {
 	grid-template-areas:
 		". turn ."
 		"players board pieces";
-	align-content: start;
+	align-content: safe center;
 	align-items: start;
 	row-gap: 12px;
 }
@@ -61,7 +61,7 @@ button:disabled {
 .piecesRight {
 	grid-area: pieces;
 	justify-self: end;
-	align-self: center;
+	align-self: start;
 	box-sizing: border-box;
 	width: min(430px, calc(100% - 32px));
 	max-height: 760px;
@@ -1066,6 +1066,18 @@ button:disabled {
 	transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
 }
 
+.pieceCardBare,
+.pieceCardBare:hover,
+.pieceCardBare.selected {
+	border-color: transparent;
+	background: transparent;
+	box-shadow: none;
+}
+
+.pieceCardBare.selected {
+	filter: drop-shadow(0 0 5px rgba(169, 108, 255, 0.5));
+}
+
 .selected {
 	border-color: rgba(169, 108, 255, 0.8);
 	box-shadow: 0 0 0 2px rgba(169, 108, 255, 0.2), 0 7px 18px rgba(3, 1, 9, 0.36);
@@ -1262,19 +1274,46 @@ button:disabled {
 
 @media (max-width: 1700px) {
 	.gameMain {
-		grid-template-columns: minmax(0, 1fr);
+		grid-template-columns: minmax(300px, 0.9fr) minmax(0, 1.3fr);
 		grid-template-areas:
-			"players"
-			"turn"
-			"board"
-			"pieces";
+			"turn turn"
+			"board board"
+			"players pieces";
 		justify-items: center;
+		column-gap: 25px;
 		row-gap: 20px;
+		width: min(100%, 920px);
+		margin-inline: auto;
 	}
 
 	.playerRankPanel {
-		justify-self: center;
-		width: min(100%, 728px);
+		justify-self: stretch;
+		align-self: start;
+		width: 100%;
+		margin-top: 24px;
+	}
+
+	.playerStatusCard {
+		min-height: 82px;
+		padding: 14px 16px;
+	}
+
+	.playerStatusName {
+		font-size: 18px;
+	}
+
+	.playerStatusBlocks {
+		font-size: 27px;
+	}
+
+	.playerStatusCaption,
+	.viewPiecesButton {
+		font-size: 13px;
+	}
+
+	.playerRemainingPieces {
+		grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+		justify-items: center;
 	}
 
 	.turnBannerSlot,
@@ -1282,13 +1321,43 @@ button:disabled {
 		justify-self: center;
 	}
 
+	.board {
+		--narrow-board-cell: min(40px, calc((100vw - 72px) / 20));
+		grid-template-columns: repeat(20, var(--narrow-board-cell));
+		grid-template-rows: repeat(20, var(--narrow-board-cell));
+	}
+
+	.tile {
+		width: var(--narrow-board-cell);
+		height: var(--narrow-board-cell);
+	}
+
 	.piecesRight {
-		justify-self: center;
-		width: min(100%, 1300px);
+		justify-self: stretch;
+		align-self: start;
+		width: 100%;
 		margin-right: 0;
+		margin-top: 24px;
 	}
 
 	.pieceCardGrid {
-		grid-template-columns: repeat(11, 86px);
+		grid-template-columns: repeat(auto-fit, 86px);
+	}
+}
+
+@media (max-width: 760px) {
+	.gameMain {
+		grid-template-columns: minmax(0, 1fr);
+		grid-template-areas:
+			"turn"
+			"board"
+			"pieces"
+			"players";
+	}
+
+	.playerRankPanel,
+	.piecesRight {
+		justify-self: center;
+		width: min(100%, 680px);
 	}
 }
