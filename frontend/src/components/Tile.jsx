@@ -1,11 +1,28 @@
 import clsx from 'clsx'
 import { getPlayerColorHex } from '../playerColors'
 
-function Tile({value, row, col, viewRow, viewCol, onClick, onHover, isHovered, neighbors, hoverNeighbors}) {
+function Tile({
+	value,
+	row,
+	col,
+	viewRow,
+	viewCol,
+	onClick,
+	onHover,
+	isHovered,
+	neighbors,
+	hoverNeighbors,
+	startPlayer,
+	isOwnStart,
+}) {
 
 	const isOccupied = value.occupied
+	const isPlayable = value.playable !== false
 	const occupiedColor = getPlayerColorHex(value.color)
-	const handleClick = () => { onClick(row, col, viewRow, viewCol) }
+	const startColor = startPlayer ? getPlayerColorHex(startPlayer.color) : null
+	const handleClick = () => {
+		if (isPlayable) onClick(row, col, viewRow, viewCol)
+	}
 	const belongsToSamePiece = neighbor => isOccupied && value.pieceId && neighbor?.pieceId === value.pieceId
 
 	const shouldRemoveTopBorder = belongsToSamePiece(neighbors.top) || (isHovered && hoverNeighbors?.top)
@@ -20,15 +37,30 @@ function Tile({value, row, col, viewRow, viewCol, onClick, onHover, isHovered, n
 
 	return (
 		<div
-			className={clsx('tile', (isOccupied) && 'glassPieceTile')}
-			onClick={handleClick}
-			onPointerEnter={event => onHover(row, col, viewRow, viewCol,
-				event.nativeEvent.offsetX / event.currentTarget.clientWidth,
-				event.nativeEvent.offsetY / event.currentTarget.clientHeight
+			className={clsx(
+				'tile',
+				!isPlayable && 'tileNonPlayable',
+				isOccupied && 'glassPieceTile',
+				startPlayer && 'startingTile',
+				isOwnStart && 'ownStartingTile',
 			)}
+			onClick={handleClick}
+			onPointerEnter={event => {
+				if (!isPlayable) return
+				onHover(
+					row,
+					col,
+					viewRow,
+					viewCol,
+					event.nativeEvent.offsetX / event.currentTarget.clientWidth,
+					event.nativeEvent.offsetY / event.currentTarget.clientHeight,
+				)
+			}}
+			aria-label={startPlayer ? `${startPlayer.name}'s starting square` : undefined}
 
 			style={{
 				'--piece-color': occupiedColor,
+				'--start-color': startColor,
 				background:
 					isHovered
 						? 'rgba(127, 82, 196, 0.62)'
@@ -59,7 +91,9 @@ function Tile({value, row, col, viewRow, viewCol, onClick, onHover, isHovered, n
 					? `${innerBorderWidth}px solid ${mergedBorderColor}`
 					: `${outerBorderWidth}px solid ${defaultBorderColor}`,
 			}}
-		/>
+		>
+			{startPlayer && <span className="startPositionMarker" aria-hidden="true" />}
+		</div>
 	)
 }
 

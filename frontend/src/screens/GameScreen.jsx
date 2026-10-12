@@ -10,15 +10,9 @@ import TurnBanner from '../components/TurnBanner'
 import WaitingOverlay from '../components/WaitingOverlay'
 import WinnerModal from '../components/WinnerModal'
 import { PLAYER_COLOR_HEX, getPlayerColorHex } from '../playerColors'
+import { isValidPlacement } from '../game/placementRules'
 
-const BOARD_SIZE = 20
-const EMPTY_BOARD = Array(BOARD_SIZE).fill(null).map(() =>
-	Array(BOARD_SIZE).fill(null).map(() => ({
-		occupied: false,
-		player: null,
-		color: null,
-	}))
-)
+const EMPTY_BOARD = []
 
 
 function rotationForCells(cells, rotation, flipped = false) {
@@ -39,71 +33,17 @@ function rotationForCells(cells, rotation, flipped = false) {
 }
 
 
-function viewToBoard(row, col, rotation, size) {
+function viewToBoard(row, col, rotation, height, width) {
 	switch (rotation) {
 		case 90:
-			return { row: size - 1 - col, col: row }
+			return { row: height - 1 - col, col: row }
 		case 180:
-			return { row: size - 1 - row, col: size - 1 - col }
+			return { row: height - 1 - row, col: width - 1 - col }
 		case 270:
-			return { row: col, col: size - 1 - row }
+			return { row: col, col: width - 1 - row }
 		default:
 			return { row, col }
 	}
-}
-
-
-function rotationForCorner(corner) {
-	if (!corner) return 0
-
-	if (corner.row === 0 && corner.col === 0) return 180
-	if (corner.row === 0 && corner.col === BOARD_SIZE - 1) return 90
-	if (corner.row === BOARD_SIZE - 1 && corner.col === 0) return 270
-
-	return 0
-}
-
-
-function isValidPlacement(board, cells, player, isFirstMove) {
-	if (cells.some(cell => board[cell.row][cell.col].occupied)) return false
-
-	if (isFirstMove) {
-		return cells.some(cell =>
-			cell.row === player.corner.row && cell.col === player.corner.col
-		)
-	}
-
-	let touchesOwnPieceDiagonally = false
-
-	for (const cell of cells) {
-		const sideNeighbors = [
-			[cell.row - 1, cell.col],
-			[cell.row + 1, cell.col],
-			[cell.row, cell.col - 1],
-			[cell.row, cell.col + 1],
-		]
-
-		if (sideNeighbors.some(([row, col]) =>
-			row >= 0 && row < BOARD_SIZE &&
-			col >= 0 && col < BOARD_SIZE &&
-			board[row][col].player === player.id
-		)) return false
-
-		const diagonalNeighbors = [
-			[cell.row - 1, cell.col - 1],
-			[cell.row - 1, cell.col + 1],
-			[cell.row + 1, cell.col - 1],
-			[cell.row + 1, cell.col + 1],
-		]
-
-		if (diagonalNeighbors.some(([row, col]) =>
-			row >= 0 && row < BOARD_SIZE &&
-			col >= 0 && col < BOARD_SIZE &&
-			board[row][col].player === player.id
-		)) touchesOwnPieceDiagonally = true
-	}
-
-	return touchesOwnPieceDiagonally
 }
 
 
@@ -115,23 +55,29 @@ function canPlacePieceInOrientation(
 	player,
 	boardRotation,
 	isFirstMove,
+	players,
 ) {
+	const boardHeight = board.length
+	const boardWidth = board[0]?.length || 0
+	const viewHeight = boardRotation % 180 === 0 ? boardHeight : boardWidth
+	const viewWidth = boardRotation % 180 === 0 ? boardWidth : boardHeight
 	const rotatedCells = rotationForCells(piece.cells, rotation, flipped)
 	const minRow = Math.min(...rotatedCells.map(cell => cell[0]))
 	const minCol = Math.min(...rotatedCells.map(cell => cell[1]))
 	const pieceRows = Math.max(...rotatedCells.map(cell => cell[0])) - minRow + 1
 	const pieceCols = Math.max(...rotatedCells.map(cell => cell[1])) - minCol + 1
 
-	for (let anchorRow = 0; anchorRow <= BOARD_SIZE - pieceRows; anchorRow += 1) {
-		for (let anchorCol = 0; anchorCol <= BOARD_SIZE - pieceCols; anchorCol += 1) {
+	for (let anchorRow = 0; anchorRow <= viewHeight - pieceRows; anchorRow += 1) {
+		for (let anchorCol = 0; anchorCol <= viewWidth - pieceCols; anchorCol += 1) {
 			const cells = rotatedCells.map(cell => viewToBoard(
 				anchorRow + cell[0] - minRow,
 				anchorCol + cell[1] - minCol,
 				boardRotation,
-				BOARD_SIZE,
+				boardHeight,
+				boardWidth,
 			))
 
-			if (isValidPlacement(board, cells, player, isFirstMove)) {
+			if (isValidPlacement(board, cells, player, isFirstMove, players, piece.ability)) {
 				return true
 			}
 		}
@@ -194,7 +140,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 	const board = game?.board || EMPTY_BOARD
 	const isFinished = game?.status === 'finished'
 	const isWinnerModalClosed = isFinished && closedWinnerTurnNumber === game?.turnNumber
-	const boardRotation = rotationForCorner(me?.corner)
+	const boardRotation = 0
 	const pieces = useMemo(() => {
 		const isFirstMove = !me?.pieces.some(piece => piece.placed)
 
@@ -213,6 +159,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 				me,
 				boardRotation,
 				isFirstMove,
+				game?.players || [],
 			)) return pieceWithOrientation
 
 			const nextOrientation = nextPieceOrientations(rotation, flipped)
@@ -224,13 +171,14 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 					me,
 					boardRotation,
 					isFirstMove,
+					game?.players || [],
 				))
 
 			return nextOrientation
 				? { ...pieceWithOrientation, ...nextOrientation }
 				: pieceWithOrientation
 		})
-	}, [board, boardRotation, game?.status, me, pieceFlips, pieceRotations])
+	}, [board, boardRotation, game?.players, game?.status, me, pieceFlips, pieceRotations])
 
 	const playablePieceNames = useMemo(() => {
 		const playableNames = new Set()
@@ -258,13 +206,14 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 				me,
 				boardRotation,
 				isFirstMove,
+				game?.players || [],
 			)
 
 			if (isPlayable) playableNames.add(piece.name)
 		}
 
 		return playableNames
-	}, [board, boardRotation, game?.status, me, pieces])
+	}, [board, boardRotation, game?.players, game?.status, me, pieces])
 
 	const selectedPiece = useMemo(() => 
 		pieces.find(piece =>
@@ -310,7 +259,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 
 		async function loadGame() {
 			try {
-				const initialGame = await getGame(gameId)
+				const initialGame = await getGame(gameId, credentials)
 
 				if (isActive) {
 					setGame(initialGame)
@@ -599,19 +548,24 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 		const pointerRow = viewRow + offsetY
 		const pointerCol = viewCol + offsetX
 		const isFirstMove = !me.pieces.some(piece => piece.placed)
+		const boardHeight = board.length
+		const boardWidth = board[0]?.length || 0
+		const viewHeight = boardRotation % 180 === 0 ? boardHeight : boardWidth
+		const viewWidth = boardRotation % 180 === 0 ? boardWidth : boardHeight
 		let nearestCells = []
 		let nearestDistance = Infinity
 
-		for (let anchorRow = 0; anchorRow <= BOARD_SIZE - pieceRows; anchorRow += 1) {
-			for (let anchorCol = 0; anchorCol <= BOARD_SIZE - pieceCols; anchorCol += 1) {
+		for (let anchorRow = 0; anchorRow <= viewHeight - pieceRows; anchorRow += 1) {
+			for (let anchorCol = 0; anchorCol <= viewWidth - pieceCols; anchorCol += 1) {
 				const cells = rotatedCells.map(cell => viewToBoard(
 					anchorRow + cell[0] - minRow,
 					anchorCol + cell[1] - minCol,
 					boardRotation,
-					BOARD_SIZE
+					boardHeight,
+					boardWidth,
 				))
 
-				if (!isValidPlacement(board, cells, me, isFirstMove)) continue
+				if (!isValidPlacement(board, cells, me, isFirstMove, game?.players || [], selectedPiece.ability)) continue
 
 				const rowDistance = anchorRow + pieceRows / 2 - pointerRow
 				const colDistance = anchorCol + pieceCols / 2 - pointerCol
@@ -625,7 +579,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 		}
 
 		setHoverCells(nearestCells)
-	}, [board, boardRotation, canMove, me, selectedPiece])
+	}, [board, boardRotation, canMove, game?.players, me, selectedPiece])
 
 
 	useEffect(() => {
@@ -714,6 +668,8 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 					onBoardLeave={handleBoardLeave}
 					hoverCells={hoverCells}
 					pendingPlacement={pendingPlacement}
+					players={game.players}
+					currentPlayerId={me?.id}
 				/>
 
 				<PiecePanel

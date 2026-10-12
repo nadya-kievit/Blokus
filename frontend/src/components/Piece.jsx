@@ -3,6 +3,12 @@ import { getPlayerColorHex } from '../playerColors'
 
 function Piece({ piece, isWaitingForPlayers, placed, isSelected, isPlayable = true, disabled = false, onClick, rotation, flipped, color, displaySize, cellSize = 10, bare = false }) {
 	const isInteractive = !isWaitingForPlayers && !placed && isPlayable && !disabled
+    const ability = !placed ? piece.ability : null
+    const abilityTooltip = ability === 'scout'
+        ? 'Scout: Place anywhere without sharing edges with your own pieces. Your first piece must cover your starting square.'
+        : ability === 'connector'
+            ? 'Connector: Must touch your own pieces along an edge or corner. Your first piece must cover your starting square.'
+            : undefined
 
     const size = cellSize
     const cardSize = displaySize || 72
@@ -62,8 +68,16 @@ function Piece({ piece, isWaitingForPlayers, placed, isSelected, isPlayable = tr
                 isSelected && isInteractive && 'selected',
             )}
             onClick={isInteractive ? onClick : undefined}
+            title={abilityTooltip}
+            aria-label={abilityTooltip ? `${piece.name}. ${abilityTooltip}` : undefined}
             style={displaySize ? { width: displaySize, height: displaySize } : undefined}
         >
+
+        {abilityTooltip && (
+            <span className="specialPieceIndicator" aria-hidden="true">
+                {ability === 'scout' ? 'S' : 'C'}
+            </span>
+        )}
 
         {rotatedCells.map((cell, index) => {
 

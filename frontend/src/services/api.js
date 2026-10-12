@@ -36,8 +36,13 @@ export async function createGame(settings) {
 }
 
 
-export async function getGame(gameId) {
-	const response = await fetch(`${API_BASE}/games/${gameId}`)
+export async function getGame(gameId, credentials) {
+	const response = await fetch(`${API_BASE}/games/${gameId}`, {
+		headers: credentials ? {
+			'X-Player-Id': credentials.playerId,
+			'X-Player-Token': credentials.playerToken,
+		} : {},
+	})
 
 	return parseResponse(response)
 }

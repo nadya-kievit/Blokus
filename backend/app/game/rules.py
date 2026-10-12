@@ -1,6 +1,3 @@
-BOARD_SIZE = 20
-
-
 def get_cell_position(cell):
 
     if isinstance(cell, dict):
@@ -25,7 +22,22 @@ def cell_belongs_to_player(board_cell, player_id):
     return False
 
 
-def validate_move(board_grid, cells, is_first_move, player_id=1, first_corner=None):
+def is_position_in_bounds(board_grid, row, col):
+    return (
+        0 <= row < len(board_grid)
+        and 0 <= col < len(board_grid[row])
+    )
+
+
+def validate_move(
+    board_grid,
+    cells,
+    is_first_move,
+    player_id=1,
+    first_corner=None,
+    reserved_positions=None,
+    ability=None,
+):
 
     if not cells:
         return {
@@ -39,10 +51,16 @@ def validate_move(board_grid, cells, is_first_move, player_id=1, first_corner=No
         row, col = get_cell_position(cell)
 
         # Rule 1: cannot place out of bounds
-        if row < 0 or row >= BOARD_SIZE or col < 0 or col >= BOARD_SIZE:
+        if not is_position_in_bounds(board_grid, row, col):
             return {
                 "valid": False,
                 "reason": "Piece is out of bounds."
+            }
+
+        if not board_grid[row][col].get("playable", True):
+            return {
+                "valid": False,
+                "reason": "Piece overlaps a non-playable square."
             }
 
         # Rule 2: cannot place on top of another tile
@@ -54,14 +72,21 @@ def validate_move(board_grid, cells, is_first_move, player_id=1, first_corner=No
 
         move_positions.add((row, col))
 
-    # Rule 3: first move must touch the player's assigned corner
-    if is_first_move:
-        required_corner = first_corner or (BOARD_SIZE - 1, BOARD_SIZE - 1)
+    reserved_positions = set(reserved_positions or [])
+    if move_positions & reserved_positions:
+        return {
+            "valid": False,
+            "reason": "Piece overlaps another player's reserved starting square."
+        }
 
-        if tuple(required_corner) not in move_positions:
+    # Rule 3: first move must cover the player's assigned starting square
+    if is_first_move:
+        required_corner = first_corner
+
+        if required_corner is None or tuple(required_corner) not in move_positions:
             return {
                 "valid": False,
-                "reason": "First piece must cover your starting corner."
+                "reason": "First piece must cover your assigned starting square."
             }
 
         return {
@@ -70,6 +95,7 @@ def validate_move(board_grid, cells, is_first_move, player_id=1, first_corner=No
         }
 
     touches_diagonal = False
+    touches_side = False
 
     for row, col in move_positions:
 
@@ -83,14 +109,15 @@ def validate_move(board_grid, cells, is_first_move, player_id=1, first_corner=No
 
         for neighbor_row, neighbor_col in side_neighbors:
             if (
-                0 <= neighbor_row < BOARD_SIZE and
-                0 <= neighbor_col < BOARD_SIZE and
+                is_position_in_bounds(board_grid, neighbor_row, neighbor_col) and
                 cell_belongs_to_player(board_grid[neighbor_row][neighbor_col], player_id)
             ):
-                return {
-                    "valid": False,
-                    "reason": "Piece cannot touch your own pieces horizontally or vertically."
-                }
+                touches_side = True
+                if ability != "connector":
+                    return {
+                        "valid": False,
+                        "reason": "Piece cannot touch your own pieces horizontally or vertically."
+                    }
 
         # Rule 5: must touch another placed tile diagonally
         diagonal_neighbors = [
@@ -102,13 +129,18 @@ def validate_move(board_grid, cells, is_first_move, player_id=1, first_corner=No
 
         for neighbor_row, neighbor_col in diagonal_neighbors:
             if (
-                0 <= neighbor_row < BOARD_SIZE and
-                0 <= neighbor_col < BOARD_SIZE and
+                is_position_in_bounds(board_grid, neighbor_row, neighbor_col) and
                 cell_belongs_to_player(board_grid[neighbor_row][neighbor_col], player_id)
             ):
                 touches_diagonal = True
 
-    if not touches_diagonal:
+    if ability == "connector" and not (touches_side or touches_diagonal):
+        return {
+            "valid": False,
+            "reason": "Connector must touch one of your pieces along an edge or corner."
+        }
+
+    if ability not in {"scout", "connector"} and not touches_diagonal:
         return {
             "valid": False,
             "reason": "Piece must touch one of your pieces diagonally."

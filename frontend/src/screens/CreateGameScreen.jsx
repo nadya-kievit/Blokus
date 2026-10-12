@@ -5,10 +5,80 @@ function CreateGameScreen({ onEnterGame, onConfigureGame }) {
 	const [inviteCode, setInviteCode] = useState('')
 	const [error, setError] = useState('')
 	const codeInputRefs = useRef([])
+	const pageRef = useRef(null)
 
 
 	useEffect(() => {
 		wakeGameServer().catch(() => {})
+	}, [])
+
+
+	useEffect(() => {
+		const page = pageRef.current
+		const viewport = window.visualViewport
+
+		document.body.classList.add('createGameActive')
+
+		if (!page || !viewport) {
+			return () => document.body.classList.remove('createGameActive')
+		}
+
+		let expandedViewportHeight = viewport.height
+		let viewportWidth = viewport.width
+		let isKeyboardOpen = false
+		let animationFrame = null
+
+		const syncVisualViewport = () => {
+			if (Math.abs(viewport.width - viewportWidth) > 50) {
+				viewportWidth = viewport.width
+				expandedViewportHeight = viewport.height
+				isKeyboardOpen = false
+			}
+
+			expandedViewportHeight = Math.max(expandedViewportHeight, viewport.height)
+
+			const viewportReduction = expandedViewportHeight - viewport.height
+			const openThreshold = Math.max(96, expandedViewportHeight * 0.14)
+			const codeInputIsFocused = document.activeElement?.matches('.codeInputGroup input')
+
+			if (!isKeyboardOpen && codeInputIsFocused && viewportReduction > openThreshold) {
+				isKeyboardOpen = true
+			}
+
+			if (isKeyboardOpen && viewportReduction < 32) {
+				isKeyboardOpen = false
+			}
+
+			page.classList.toggle('keyboardOpen', isKeyboardOpen)
+			page.style.setProperty('--visual-viewport-height', `${viewport.height}px`)
+			page.style.setProperty('--visual-viewport-offset', `${viewport.offsetTop}px`)
+		}
+
+		const scheduleVisualViewportSync = () => {
+			if (animationFrame !== null) {
+				cancelAnimationFrame(animationFrame)
+			}
+
+			animationFrame = requestAnimationFrame(() => {
+				animationFrame = null
+				syncVisualViewport()
+			})
+		}
+
+		syncVisualViewport()
+		viewport.addEventListener('resize', scheduleVisualViewportSync)
+		viewport.addEventListener('scroll', scheduleVisualViewportSync)
+
+		return () => {
+			document.body.classList.remove('createGameActive')
+			page.classList.remove('keyboardOpen')
+			viewport.removeEventListener('resize', scheduleVisualViewportSync)
+			viewport.removeEventListener('scroll', scheduleVisualViewportSync)
+
+			if (animationFrame !== null) {
+				cancelAnimationFrame(animationFrame)
+			}
+		}
 	}, [])
 
 
@@ -75,10 +145,10 @@ function CreateGameScreen({ onEnterGame, onConfigureGame }) {
 
 	
 	return (
-		<div className="startPage">
+		<div ref={pageRef} className="startPage createGamePage">
 			<h1 className="gameTitle">Blokit</h1>
 
-			<div className="startPanel" style={{width: '500px'}}>
+			<div className="startPanel createGamePanel">
 				<h2>Play online</h2>
 
 				<p>Create a new room or join friends with their 6 digit invite code.</p>

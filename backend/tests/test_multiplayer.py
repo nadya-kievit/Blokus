@@ -24,6 +24,9 @@ def setup_function():
     main_module.turn_tasks.clear()
     games.clear()
     main_module.choose_starting_player_index = lambda _player_count: 0
+    main_module.choose_start_positions = (
+        lambda start_positions, player_count: list(start_positions)[:player_count]
+    )
 
 
 def create_joined_game():
@@ -63,19 +66,35 @@ def place_piece(game_id, player, piece_name, cells):
                 return message
 
 
+def assigned_cell(game_id, player):
+    runtime_player = next(
+        candidate
+        for candidate in games[game_id]["players"]
+        if candidate["id"] == player["playerId"]
+    )
+    return dict(runtime_player["startPosition"])
+
+
+def place_first_pieces(game_id, players):
+    for player in players:
+        place_piece(game_id, player, "I1", [assigned_cell(game_id, player)])
+
+
 def test_creating_multiple_games_keeps_boards_isolated():
     first_game_id, first_players = create_joined_game()
     second_game_id, _ = create_joined_game()
 
-    place_piece(first_game_id, first_players[0], "I1", [{"row": 0, "col": 0}])
+    first_start = assigned_cell(first_game_id, first_players[0])
+    place_piece(first_game_id, first_players[0], "I1", [first_start])
 
     first_state = client.get(f"/games/{first_game_id}").json()
     second_state = client.get(f"/games/{second_game_id}").json()
 
-    assert first_state["board"][0][0]["occupied"] is True
-    assert first_state["board"][0][0]["pieceId"] == "p1-I1"
-    assert second_state["board"][0][0]["occupied"] is False
-    assert second_state["board"][0][0]["pieceId"] is None
+    row, col = first_start["row"], first_start["col"]
+    assert first_state["board"][row][col]["occupied"] is True
+    assert first_state["board"][row][col]["pieceId"] == "p1-I1"
+    assert second_state["board"][row][col]["occupied"] is False
+    assert second_state["board"][row][col]["pieceId"] is None
 
 
 def test_four_players_fill_seats_and_fifth_join_is_rejected():
@@ -180,6 +199,8 @@ def test_game_stores_settings_selected_when_room_is_created():
     game = response.json()
     assert game["settings"] == {
         "moveTimeLimitSeconds": 60,
+        "boardLayout": "square",
+        "playerCount": 4,
         "players": {
             "Player 1": {"color": None, "isBot": False},
             "Player 2": {"color": None, "isBot": True},
@@ -192,7 +213,8 @@ def test_game_stores_settings_selected_when_room_is_created():
 
 def test_quitting_converts_player_to_bot_and_preserves_their_board_pieces():
     game_id, players = create_joined_game()
-    place_piece(game_id, players[0], "I1", [{"row": 0, "col": 0}])
+    first_start = assigned_cell(game_id, players[0])
+    place_piece(game_id, players[0], "I1", [first_start])
 
     response = client.post(
         f"/games/{game_id}/quit",
@@ -201,7 +223,7 @@ def test_quitting_converts_player_to_bot_and_preserves_their_board_pieces():
     state = client.get(f"/games/{game_id}").json()
 
     assert response.json() == {"success": True}
-    assert state["board"][0][0]["occupied"] is True
+    assert state["board"][first_start["row"]][first_start["col"]]["occupied"] is True
     assert len(state["players"]) == 4
     assert state["players"][0]["isBot"] is True
     assert state["currentPlayerId"] == players[1]["playerId"]
@@ -502,7 +524,7 @@ def test_first_move_must_cover_player_corner():
     )
 
     assert response.json()["valid"] is False
-    assert "starting corner" in response.json()["reason"]
+    assert "starting square" in response.json()["reason"]
 
 
 def test_players_cannot_move_out_of_turn():
@@ -521,11 +543,11 @@ def test_players_cannot_move_out_of_turn():
 def test_players_cannot_use_another_players_piece_after_they_place_it():
     game_id, players = create_joined_game()
 
-    place_piece(game_id, players[0], "I1", [{"row": 0, "col": 0}])
+    place_piece(game_id, players[0], "I1", [assigned_cell(game_id, players[0])])
 
     response = client.post(
         f"/games/{game_id}/validate-move",
-        json=move_payload(players[1], "I1", [{"row": 0, "col": 19}]),
+        json=move_payload(players[1], "I1", [assigned_cell(game_id, players[1])]),
     )
 
     assert response.json()["valid"] is True
@@ -533,18 +555,17 @@ def test_players_cannot_use_another_players_piece_after_they_place_it():
 
 def test_same_color_diagonal_and_side_rules_are_enforced():
     game_id, players = create_joined_game()
+    # This test exercises ordinary-piece rules, regardless of random assignments.
+    next(piece for piece in games[game_id]["players"][0]["pieces"] if piece["name"] == "I2").pop("ability", None)
 
-    place_piece(game_id, players[0], "I1", [{"row": 0, "col": 0}])
-    place_piece(game_id, players[1], "I1", [{"row": 0, "col": 19}])
-    place_piece(game_id, players[2], "I1", [{"row": 19, "col": 19}])
-    place_piece(game_id, players[3], "I1", [{"row": 19, "col": 0}])
+    place_first_pieces(game_id, players)
 
     side_response = client.post(
         f"/games/{game_id}/validate-move",
         json=move_payload(
             players[0],
             "I2",
-            [{"row": 0, "col": 1}, {"row": 0, "col": 2}],
+            [{"row": 3, "col": 4}, {"row": 3, "col": 5}],
         ),
     )
     diagonal_response = client.post(
@@ -552,7 +573,7 @@ def test_same_color_diagonal_and_side_rules_are_enforced():
         json=move_payload(
             players[0],
             "I2",
-            [{"row": 1, "col": 1}, {"row": 1, "col": 2}],
+            [{"row": 4, "col": 4}, {"row": 4, "col": 5}],
         ),
     )
 
@@ -562,18 +583,16 @@ def test_same_color_diagonal_and_side_rules_are_enforced():
 
 def test_other_players_do_not_count_as_diagonal_contact():
     game_id, players = create_joined_game()
+    next(piece for piece in games[game_id]["players"][0]["pieces"] if piece["name"] == "I2").pop("ability", None)
 
-    place_piece(game_id, players[0], "I1", [{"row": 0, "col": 0}])
-    place_piece(game_id, players[1], "I1", [{"row": 0, "col": 19}])
-    place_piece(game_id, players[2], "I1", [{"row": 19, "col": 19}])
-    place_piece(game_id, players[3], "I1", [{"row": 19, "col": 0}])
+    place_first_pieces(game_id, players)
 
     response = client.post(
         f"/games/{game_id}/validate-move",
         json=move_payload(
             players[0],
             "I2",
-            [{"row": 1, "col": 18}, {"row": 1, "col": 17}],
+            [{"row": 4, "col": 12}, {"row": 4, "col": 11}],
         ),
     )
 
@@ -586,7 +605,10 @@ def test_other_players_do_not_count_as_diagonal_contact():
 def test_player_with_no_available_moves_is_marked_and_skipped():
     game_id, players = create_joined_game()
     game = games[game_id]
-    game["board"].place_piece([{"row": 0, "col": 0}], player=players[1]["playerId"])
+    game["board"].place_piece(
+        [assigned_cell(game_id, players[0])],
+        player=players[1]["playerId"],
+    )
 
     refresh_out_of_moves(game)
 
@@ -602,9 +624,10 @@ def test_game_finishes_with_leaderboard_when_everyone_is_out_of_moves():
     game_id, _ = create_joined_game()
     game = games[game_id]
 
-    for row in range(20):
-        for col in range(20):
-            game["board"].grid[row][col].update({"occupied": True, "player": "blocked"})
+    for row in game["board"].grid:
+        for cell in row:
+            if cell["playable"]:
+                cell.update({"occupied": True, "player": "blocked"})
 
     for index, player in enumerate(game["players"]):
         for piece in player["pieces"][:index + 1]:

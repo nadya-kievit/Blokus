@@ -8,28 +8,47 @@ function Board({
 	onBoardLeave,
 	hoverCells,
 	pendingPlacement,
+	players,
+	currentPlayerId,
 }) {
-	const boardSize = board.length
+	const boardHeight = board.length
+	const boardWidth = board[0]?.length || 0
 	const pendingCells = new Set(
 		(pendingPlacement?.cells || []).map(cell => `${cell.row},${cell.col}`)
 	)
+	const startingPlayers = new Map(
+		players
+			.filter(player => player.startPosition)
+			.map(player => [
+				`${player.startPosition.row},${player.startPosition.col}`,
+				player,
+			])
+	)
 
-	function viewToBoard(row, col, rotation, size) {
+	function viewToBoard(row, col, rotation, height, width) {
 		switch (rotation) {
 			case 90:
-				return { row: size - 1 - col, col: row }
+				return { row: height - 1 - col, col: row }
 			case 180:
-				return { row: size - 1 - row, col: size - 1 - col }
+				return { row: height - 1 - row, col: width - 1 - col }
 			case 270:
-				return { row: col, col: size - 1 - row }
+				return { row: col, col: width - 1 - row }
 			default:
 				return { row, col }
 		}
 	}
 
-	const displayedCells = board.map((row, viewRow) =>
-		row.map((_, viewCol) => {
-			const boardPosition = viewToBoard(viewRow, viewCol, boardRotation, boardSize)
+	const viewHeight = boardRotation % 180 === 0 ? boardHeight : boardWidth
+	const viewWidth = boardRotation % 180 === 0 ? boardWidth : boardHeight
+	const displayedCells = Array.from({ length: viewHeight }, (_, viewRow) =>
+		Array.from({ length: viewWidth }, (_, viewCol) => {
+			const boardPosition = viewToBoard(
+				viewRow,
+				viewCol,
+				boardRotation,
+				boardHeight,
+				boardWidth,
+			)
 			const isPending = pendingCells.has(`${boardPosition.row},${boardPosition.col}`)
 
 			return {
@@ -55,7 +74,15 @@ function Board({
 	}
 
 	return (
-		<div className="board" data-game-board onMouseLeave={onBoardLeave}>
+		<div
+			className="board"
+			data-game-board
+			onMouseLeave={onBoardLeave}
+			style={{
+				'--board-columns': viewWidth,
+				'--board-rows': viewHeight,
+			}}
+		>
 			{displayedCells.map((row, viewRow) =>
 				row.map((cell, viewCol) => {
 					const neighbors = {
@@ -88,6 +115,8 @@ function Board({
 							onHover={onTileHover}
 							neighbors={neighbors}
 							hoverNeighbors={hoverNeighbors}
+							startPlayer={startingPlayers.get(`${cell.row},${cell.col}`)}
+							isOwnStart={startingPlayers.get(`${cell.row},${cell.col}`)?.id === currentPlayerId}
 						/>
 					)
 				})
