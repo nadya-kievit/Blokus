@@ -1,0 +1,421 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&family=Space+Grotesk:wght@700&display=swap');
+
+.lobbyScreen {
+	min-height: 100vh;
+	min-height: 100dvh;
+	background: #0D0E13;
+	color: #EDEFF5;
+	font-family: 'DM Sans', sans-serif;
+	font-size: 15px;
+	line-height: 1.4;
+}
+
+.lobbyScreen *,
+.lobbyScreen *::before,
+.lobbyScreen *::after {
+	box-sizing: border-box;
+}
+
+.lobbyScreen button,
+.lobbyScreen input {
+	font: inherit;
+	color: inherit;
+	box-shadow: none;
+}
+
+.lobbyScreen button {
+	border: 1px solid #2E3343;
+	border-radius: 4px;
+	background: #0F1117;
+	font-weight: 600;
+}
+
+.lobbyScreen button:disabled {
+	cursor: not-allowed;
+	opacity: 1;
+}
+
+.lobbyScreen button:focus-visible,
+.lobbyScreen input:focus-visible {
+	outline: 2px solid #EDEFF5;
+	outline-offset: 3px;
+}
+
+.lobbyScreen .lobbyTopBar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	padding: 16px 28px;
+	border-bottom: 1px solid #1F2230;
+}
+
+.lobbyScreen .lobbyLogo {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	font-family: 'Space Grotesk', sans-serif;
+	font-size: 22px;
+	font-weight: 700;
+	line-height: 1.2;
+}
+
+.lobbyScreen .lobbyLogoMark {
+	display: grid;
+	grid-template-columns: repeat(2, 11px);
+	grid-template-rows: repeat(2, 11px);
+	gap: 1px;
+}
+
+.lobbyScreen .lobbyLogoMark i {
+	border-radius: 1px;
+	background: #8B5CF6;
+}
+
+.lobbyScreen .lobbyLogoMark i:nth-child(2) { background: #F97316; }
+.lobbyScreen .lobbyLogoMark i:nth-child(3) { background: #14B8A6; }
+
+.lobbyScreen .lobbyLeave {
+	padding: 0;
+	border: 0;
+	background: transparent;
+	color: #C9CDD9;
+	font-size: 14px;
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+.lobbyScreen .lobbyLeave:hover { text-decoration: underline; }
+
+.lobbyScreen .lobbyMain {
+	padding: 32px 16px;
+}
+
+.lobbyScreen .lobbyPanel {
+	width: 100%;
+	max-width: 640px;
+	margin: 0 auto;
+	border: 1px solid #272B38;
+	border-radius: 6px;
+	background: #15171F;
+	overflow: hidden;
+}
+
+.lobbyScreen .lobbySection {
+	padding: 24px 28px;
+}
+
+.lobbyScreen .lobbySection + .lobbySection {
+	border-top: 1px solid #272B38;
+}
+
+.lobbyScreen .lobbySectionLabel {
+	margin: 0 0 16px;
+	color: #9AA1B5;
+	font-size: 12px;
+	font-weight: 600;
+	line-height: 1.4;
+	letter-spacing: 1.2px;
+	text-transform: uppercase;
+}
+
+.lobbyScreen .lobbySectionHeading {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 16px;
+}
+
+.lobbyScreen .lobbySectionHeading .lobbySectionLabel {
+	margin-bottom: 0;
+}
+
+.lobbyScreen .lobbyInviteSection {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 20px;
+}
+
+.lobbyScreen .lobbyInviteSection .lobbySectionLabel { margin-bottom: 6px; }
+
+.lobbyScreen .lobbyInviteCode {
+	font-family: 'JetBrains Mono', monospace;
+	font-size: 30px;
+	font-weight: 700;
+	letter-spacing: 6px;
+	line-height: 1.3;
+}
+
+.lobbyScreen .lobbyCopy {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	flex-shrink: 0;
+	height: 40px;
+	padding: 0 12px;
+	background: #1C1F2A;
+	font-size: 13px;
+}
+
+.lobbyScreen .lobbyCopy svg {
+	width: 16px;
+	height: 16px;
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 1.5;
+}
+
+.lobbyScreen .lobbyFieldLabel {
+	display: block;
+	margin-bottom: 8px;
+	color: #C9CDD9;
+	font-size: 14px;
+	font-weight: 500;
+}
+
+.lobbyScreen .lobbyName {
+	width: 100%;
+	min-width: 0;
+	height: 46px;
+	padding: 0 12px;
+	border: 1px solid #2E3343;
+	border-radius: 4px;
+	background: #0F1117;
+	font-size: 16px;
+}
+
+.lobbyScreen .lobbyColourLabel { margin-top: 18px; }
+
+.lobbyScreen .lobbySwatches {
+	display: grid;
+	grid-template-columns: repeat(8, 44px);
+	gap: 12px;
+	padding: 5px 0;
+}
+
+.lobbyScreen .lobbySwatch {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 44px;
+	height: 44px;
+	padding: 0;
+	border: 0;
+	border-radius: 2px;
+	background: var(--lobby-swatch);
+	box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.22), inset 0 -2px 0 rgba(0, 0, 0, 0.2);
+}
+
+.lobbyScreen .lobbySwatchSelected {
+	outline: 2px solid #EDEFF5;
+	outline-offset: 3px;
+}
+
+.lobbyScreen .lobbySwatchTaken:disabled {
+	opacity: 0.3;
+}
+
+.lobbyScreen .lobbySwatchTaken span {
+	color: #0D0E13;
+	font-size: 24px;
+	font-weight: 700;
+}
+
+.lobbyScreen .lobbyJoinedCount,
+.lobbyScreen .lobbyNumber {
+	font-family: 'JetBrains Mono', monospace;
+}
+
+.lobbyScreen .lobbyJoinedCount {
+	color: #C9CDD9;
+	font-size: 14px;
+	white-space: nowrap;
+}
+
+.lobbyScreen .lobbySeats {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 10px;
+}
+
+.lobbyScreen .lobbySeat {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	min-width: 0;
+	height: 52px;
+	padding: 0 12px;
+	border: 1px solid #2E3343;
+	border-radius: 4px;
+	font-size: 15px;
+	font-weight: 600;
+}
+
+.lobbyScreen .lobbySeatColour {
+	width: 22px;
+	height: 22px;
+	flex: 0 0 22px;
+	border-radius: 1px;
+}
+
+.lobbyScreen .lobbySeatName {
+	min-width: 0;
+	flex: 1;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.lobbyScreen .lobbySeatTag {
+	flex-shrink: 0;
+	padding: 2px 5px;
+	border-radius: 2px;
+	background: #1C1F2A;
+	color: #C9CDD9;
+	font-size: 11px;
+	white-space: nowrap;
+}
+
+.lobbyScreen .lobbySeatEmpty {
+	border-style: dashed;
+	color: #9AA1B5;
+	font-weight: 400;
+}
+
+.lobbyScreen .lobbyRosterActions { display: flex; align-items: center; gap: 12px; }
+.lobbyScreen .lobbyAddBot, .lobbyScreen .lobbyFillBots { height: 32px; padding: 0 10px; flex-shrink: 0; font-size: 13px; font-weight: 600; background: #1C1F2A; }
+.lobbyScreen .lobbyFillBots { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
+.lobbyScreen .lobbyFillBots svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.5; }
+.lobbyScreen .lobbyRemovePlayer { width: 32px; height: 32px; flex: 0 0 32px; padding: 0; font-size: 21px; line-height: 1; }
+
+.lobbyScreen .lobbyHostNote,
+.lobbyScreen .lobbySetBy {
+	color: #9AA1B5;
+	font-size: 13px;
+}
+
+.lobbyScreen .lobbyBoardOptions {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 10px;
+	margin-bottom: 20px;
+}
+
+.lobbyScreen .lobbyBoardOption {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 10px;
+	min-width: 0;
+	padding: 14px 6px;
+	color: #C9CDD9;
+	font-size: 14px;
+}
+
+.lobbyScreen .lobbyBoardOptionSelected {
+	border-color: #EDEFF5;
+	background: #1C1F2A;
+	color: #EDEFF5;
+}
+
+.lobbyScreen .lobbyBoardShape {
+	--lobby-icon-cell: 8px;
+	display: grid;
+	grid-template-columns: repeat(7, var(--lobby-icon-cell));
+	grid-template-rows: repeat(7, var(--lobby-icon-cell));
+	gap: 1px;
+	flex-shrink: 0;
+}
+
+.lobbyScreen .lobbyBoardShapeCell {
+	background: #9AA1B5;
+	border-radius: 1px;
+}
+
+.lobbyScreen .lobbyBoardOptionSelected .lobbyBoardShapeCell { background: #EDEFF5; }
+.lobbyScreen .lobbyBoardShapeSmall { --lobby-icon-cell: 3px; }
+
+.lobbyScreen .lobbySettingsRow {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 20px;
+}
+
+.lobbyScreen .lobbySegments {
+	display: flex;
+	height: 42px;
+	border: 1px solid #2E3343;
+	border-radius: 4px;
+	overflow: hidden;
+}
+
+.lobbyScreen .lobbySegments button {
+	flex: 1;
+	min-width: 0;
+	padding: 0 4px;
+	border: 0;
+	border-radius: 0;
+	font-family: 'JetBrains Mono', monospace;
+	font-size: 14px;
+	font-weight: 400;
+}
+
+.lobbyScreen .lobbySegments button + button { border-left: 1px solid #2E3343; }
+.lobbyScreen .lobbySegments button[aria-pressed='true'] { background: #EDEFF5; color: #0D0E13; }
+.lobbyScreen .lobbySegments button:disabled:not([aria-pressed='true']) { color: #62697D; }
+.lobbyScreen .lobbySegments button:focus-visible { outline-offset: -3px; }
+
+.lobbyScreen .lobbyReadOnlySettings {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 12px;
+	border: 1px solid #272B38;
+	border-radius: 4px;
+	background: #0F1117;
+	font-size: 14px;
+}
+
+.lobbyScreen .lobbySetBy { margin-top: 10px; }
+
+.lobbyScreen .lobbyFooter {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+}
+
+.lobbyScreen .lobbyStatus {
+	color: #9AA1B5;
+	font-size: 14px;
+}
+
+.lobbyScreen .lobbyStart {
+	flex-shrink: 0;
+	height: 50px;
+	padding: 0 24px;
+	border: 0;
+	background: #EDEFF5;
+	color: #0D0E13;
+	font-weight: 700;
+}
+
+.lobbyScreen .lobbyStart:disabled { background: #2A2E3B; color: #8A91A5; }
+.lobbyScreen .lobbyError { color: #EF4444; font-size: 14px; overflow-wrap: anywhere; }
+
+@media (max-width: 600px) {
+	.lobbyScreen .lobbyTopBar { padding: 16px; }
+	.lobbyScreen .lobbySection { padding: 24px 16px; }
+	.lobbyScreen .lobbySeats,
+	.lobbyScreen .lobbySettingsRow { grid-template-columns: minmax(0, 1fr); }
+	.lobbyScreen .lobbySwatches { grid-template-columns: repeat(4, 44px); }
+	.lobbyScreen .lobbyInviteSection { flex-wrap: wrap; gap: 12px; }
+	.lobbyScreen .lobbyFooter { flex-direction: column; align-items: stretch; }
+	.lobbyScreen .lobbyStart { width: 100%; }
+	.lobbyScreen .lobbyPlayersHeading { flex-wrap: wrap; }
+	.lobbyScreen .lobbyRosterActions { width: 100%; justify-content: space-between; gap: 8px; }
+}

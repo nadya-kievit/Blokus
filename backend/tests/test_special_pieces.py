@@ -53,15 +53,15 @@ def own_headers(credentials):
 def assert_private_snapshot(snapshot, viewer_id=None):
     for player in snapshot["players"]:
         specials = assignments(player["pieces"])
-        if player["id"] == viewer_id:
-            owner = next(
-                candidate for candidate in main.games[snapshot["gameId"]]["players"]
-                if candidate["id"] == viewer_id
-            )
-            expected = assignments([piece for piece in owner["pieces"] if not piece["placed"]])
-            assert specials == expected
-        else:
-            assert specials == {}
+        owner = next(
+            candidate for candidate in main.games[snapshot["gameId"]]["players"]
+            if candidate["id"] == player["id"]
+        )
+        expected = assignments([
+            piece for piece in owner["pieces"]
+            if player["id"] == viewer_id or piece["placed"]
+        ])
+        assert specials == expected
 
 
 def test_assignments_are_distinct_independent_and_do_not_modify_shapes(monkeypatch):
@@ -182,7 +182,7 @@ def test_websocket_snapshots_are_private_on_broadcast_request_and_reconnect():
                     snapshot = socket.receive_json()["game"]
                     assert_private_snapshot(snapshot, own["playerId"])
                     placed = next(p for p in snapshot["players"][0]["pieces"] if p["name"] == piece["name"])
-                    assert placed["placed"] and "ability" not in placed
+                    assert placed["placed"] and placed["ability"] == piece["ability"]
                     assert all("ability" not in snapshot["board"][cell["row"]][cell["col"]] for cell in cells)
         with client.websocket_connect(socket_url(first)) as reconnected:
             assert_private_snapshot(reconnected.receive_json()["game"], first["playerId"])
@@ -262,3 +262,18 @@ def test_quitting_preserves_assignments_for_bot_and_revokes_private_access():
         assert assignments(game["players"][0]["pieces"]) == before
         assert client.get(f'/games/{game["gameId"]}', headers=own_headers(credentials[0])).status_code == 403
         assert_private_snapshot(client.get(f'/games/{game["gameId"]}').json())
+
+
+def test_public_state_reveals_only_placed_specials_for_the_game_finish():
+    with TestClient(main.app) as client:
+        game, credentials = create_game(client)
+        player = game["players"][0]
+        special = next(piece for piece in player["pieces"] if piece.get("ability"))
+        cells = next(main.valid_placements_for_piece(game, player, special))
+        main.apply_move(game, player, special["name"], cells)
+        public = client.get(f'/games/{game["gameId"]}').json()
+        assert_private_snapshot(public)
+        assert assignments(public["players"][0]["pieces"]) == {special["name"]: special["ability"]}
+        assert assignments(public["players"][1]["pieces"]) == {}
+        own = client.get(f'/games/{game["gameId"]}', headers=own_headers(credentials[1])).json()
+        assert_private_snapshot(own, credentials[1]["playerId"])

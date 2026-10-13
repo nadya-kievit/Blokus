@@ -11,6 +11,8 @@ import WaitingOverlay from '../components/WaitingOverlay'
 import WinnerModal from '../components/WinnerModal'
 import { PLAYER_COLOR_HEX, getPlayerColorHex } from '../playerColors'
 import { isValidPlacement } from '../game/placementRules'
+import { horizontalFlip, wheelRotation } from '../game/piecePresentation'
+import './GameScreen.css'
 
 const EMPTY_BOARD = []
 
@@ -113,6 +115,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 	const cursorPieceRef = useRef(null)
 	const cursorPositionRef = useRef({ x: 0, y: 0 })
 	const cursorFrameRef = useRef(null)
+	const lastWheelRef = useRef(-Infinity)
 
 	const [credentials] = useState(() => {
 		const stored = localStorage.getItem(storageKey)
@@ -124,6 +127,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 	const [pieceFlips, setPieceFlips] = useState({})
 	const [selectedPieceName, setSelectedPieceName] = useState(null)
 	const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 })
+	const [cursorCellSize, setCursorCellSize] = useState(28)
 	const [hoverCells, setHoverCells] = useState([])
 	const [pendingPlacement, setPendingPlacement] = useState(null)
 	const [lastMessage, setLastMessage] = useState('')
@@ -138,6 +142,8 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 
 	const canMove = game?.status === 'playing' && game.currentPlayerId === credentials?.playerId
 	const board = game?.board || EMPTY_BOARD
+	const boardHeight = board.length
+	const boardWidth = board[0]?.length || 0
 	const isFinished = game?.status === 'finished'
 	const isWinnerModalClosed = isFinished && closedWinnerTurnNumber === game?.turnNumber
 	const boardRotation = 0
@@ -223,12 +229,10 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 		) || null,
 		[pieces, playablePieceNames, selectedPieceName]
 	)
-	const availablePieces = useMemo(() => pieces
-		.filter(piece => !piece.placed && piece.name !== pendingPlacement?.pieceName)
-		.sort((first, second) =>
-			Number(playablePieceNames.has(second.name)) - Number(playablePieceNames.has(first.name))
-		),
-		[pendingPlacement?.pieceName, pieces, playablePieceNames]
+	const availablePieces = useMemo(() => pieces.map(piece =>
+		piece.name === pendingPlacement?.pieceName ? { ...piece, placed: true } : piece
+	),
+		[pendingPlacement?.pieceName, pieces]
 	)
 	const winners = useMemo(() => {
 		const winnerIds = game?.winnerIds?.length
@@ -241,9 +245,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 	}, [game])
 	const winner = winners[0]
 	const isTie = winners.length > 1
-	const resultColor = winners.length > 1
-		? `linear-gradient(135deg, ${winners.map(player => getPlayerColorHex(player.color)).join(', ')})`
-		: getPlayerColorHex(winner?.color, PLAYER_COLOR_HEX.Yellow)
+	const resultColor = getPlayerColorHex(winner?.color, PLAYER_COLOR_HEX.Yellow)
 	const leaderboard = game?.leaderboard || []
 	const isWaitingForPlayers = game?.status === 'waiting'
 
@@ -327,7 +329,16 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 
 	useEffect(() => {
 		const handleKeyDown = event => {
-			if (!canMove || !selectedPiece) return
+			if (!selectedPiece) return
+
+			if (event.key === 'Escape') {
+				event.preventDefault()
+				setSelectedPieceName(null)
+				setHoverCells([])
+				lastHoverTargetRef.current = null
+				return
+			}
+			if (!canMove) return
 
 			if (!['ArrowRight', 'ArrowLeft', 'ArrowUp', 'ArrowDown'].includes(event.key)) return
 
@@ -358,6 +369,45 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 		}
 	}, [canMove, selectedPiece])
 
+	useEffect(() => {
+		if (!canMove || !selectedPiece) return
+		const handleWheel = event => {
+			event.preventDefault()
+			if (!event.deltaY) return
+			const now = performance.now()
+			if (now - lastWheelRef.current < 110) return
+			lastWheelRef.current = now
+			setPieceRotations(current => ({
+				...current,
+				[selectedPiece.name]: wheelRotation(selectedPiece.rotation, event.deltaY),
+			}))
+		}
+		const handleContextMenu = event => {
+			if (!event.target.closest('.gamePage')) return
+			event.preventDefault()
+			const orientation = horizontalFlip(selectedPiece.rotation, selectedPiece.flipped)
+			setPieceRotations(current => ({ ...current, [selectedPiece.name]: orientation.rotation }))
+			setPieceFlips(current => ({ ...current, [selectedPiece.name]: orientation.flipped }))
+		}
+		window.addEventListener('wheel', handleWheel, { passive: false })
+		window.addEventListener('contextmenu', handleContextMenu)
+		return () => {
+			window.removeEventListener('wheel', handleWheel)
+			window.removeEventListener('contextmenu', handleContextMenu)
+		}
+	}, [canMove, selectedPiece])
+
+	useEffect(() => {
+		const boardElement = document.querySelector('[data-game-board]')
+		if (!boardElement) return
+		const observer = new ResizeObserver(() => {
+			const tile = boardElement.querySelector('.tile')
+			if (tile) setCursorCellSize(tile.getBoundingClientRect().width)
+		})
+		observer.observe(boardElement)
+		return () => observer.disconnect()
+	}, [boardHeight, boardWidth])
+
 
 	useLayoutEffect(() => {
 		const element = cursorPieceRef.current
@@ -369,7 +419,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 
 		element.style.transform =
 			`translate3d(${x - width / 2}px, ${y - height / 2}px, 0)`
-	}, [selectedPiece])
+	}, [selectedPiece, cursorCellSize])
 
 
 	useEffect(() => {
@@ -405,6 +455,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 		if (!selectedPiece) return
 
 		const handleOutsidePointerDown = event => {
+			if (event.button !== 0) return
 			if (event.target.closest('[data-game-board]')) return
 			if (event.target.closest('[data-game-piece]')) return
 
@@ -489,6 +540,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 			y: event.clientY,
 		}
 		setCursorPosition(cursorPositionRef.current)
+		lastWheelRef.current = -Infinity
 		setSelectedPieceName(piece.name)
 	}
 
@@ -509,6 +561,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 			pieceId: `${me.id}-${selectedPiece.name}`,
 			pieceName: selectedPiece.name,
 			playerId: me.id,
+			ability: selectedPiece.ability,
 		})
 
 		socketRef.current?.send(JSON.stringify({
@@ -600,8 +653,8 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 
 	if (!game) {
 		return (
-			<div className="startPage">
-				<h1 className="gameTitle">Blokit</h1>
+			<div className="gamePage gameLoading">
+				<h1 className="gameHeaderTitle">Blokit</h1>
 
 				<div className="startPanel">
 					<h2>Loading game...</h2>
@@ -631,6 +684,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 					color={me?.color}
 					cursorRef={cursorPieceRef}
 					position={cursorPosition}
+					cellSize={cursorCellSize}
 				/>,
 				document.body
 			)}
@@ -640,16 +694,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 				isQuitting={isQuitting}
 				onCopyInvite={handleCopyInvite}
 				onQuit={handleQuit}
-			/>
-
-			<div className="gameMain">
-				{isWaitingForPlayers && <WaitingOverlay game={game} />}
-
-				<PlayerRank
-					currentUserId={me?.id}
-					game={game}
-				/>
-
+			>
 				<TurnBanner
 					canMove={canMove}
 					game={game}
@@ -658,6 +703,15 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 					onRestart={handleRestart}
 					resultColor={resultColor}
 					winner={winner}
+				/>
+			</Header>
+
+			<div className="gameMain">
+				{isWaitingForPlayers && <WaitingOverlay game={game} />}
+
+				<PlayerRank
+					currentUserId={me?.id}
+					game={game}
 				/>
 
 				<Board
@@ -670,6 +724,8 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 					pendingPlacement={pendingPlacement}
 					players={game.players}
 					currentPlayerId={me?.id}
+					preview={{ color: me?.color, ability: selectedPiece?.ability }}
+					lastMove={game.moveHistory.at(-1)}
 				/>
 
 				<PiecePanel
@@ -681,6 +737,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 					player={me}
 					selectedPieceName={selectedPieceName}
 					totalPieceCount={pieces.length}
+					selectedPiece={selectedPiece}
 				/>
 			</div>
 

@@ -1,135 +1,98 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import CreateGameScreen from './screens/CreateGameScreen'
-import GameSettingsScreen from './screens/GameSettingsScreen'
-import PlayerInfoScreen from './screens/PlayerInfoScreen'
+import LobbyScreen from './screens/LobbyScreen'
 import GameScreen from './screens/GameScreen'
+import { createGame } from './services/api'
+import { enterLobby } from './services/roomSession'
 
-
-// Based on the current URL, set which screen should be displayed
 function getRouteFromPath(pathname) {
-	const gameMatch = pathname.match(/^\/game\/([^/]+)$/)
-
-	if (gameMatch) {
-		return {
-			screen: 'game',
-			gameId: gameMatch[1],
-		}
-	}
-
-	return {
-		screen: 'createGame',
-		gameId: null,
-	}
+	const roomMatch = pathname.match(/^\/(lobby|game)\/([^/]+)$/)
+	return roomMatch
+		? { screen: roomMatch[1], gameId: roomMatch[2] }
+		: { screen: 'home', gameId: null }
 }
-
-
-// Retrieves the saved player credentials for a game from browser storage
-function getStoredPlayer(gameId) {
-	const stored = localStorage.getItem(`blokit-player-${gameId}`)
-	return stored ? JSON.parse(stored) : null
-}
-
 
 function App() {
 	const [path, setPath] = useState(window.location.pathname)
-	const [prefetchedGame, setPrefetchedGame] = useState(null)
-	const [playerSessionVersion, setPlayerSessionVersion] = useState(0)
-	const [isConfiguringGame, setIsConfiguringGame] = useState(false)
-
+	const [entryError, setEntryError] = useState('')
+	const [isEntering, setIsEntering] = useState(false)
+	const enteringRef = useRef(false)
 	const route = getRouteFromPath(path)
-	const hasPlayerCredentials = route.gameId && Boolean(getStoredPlayer(route.gameId))
 
-
-	// Keeps React's route state in sync when the user navigates with Back or Forward
 	useEffect(() => {
-		// Copies the browser's current path into state after a history navigation event
-		const handlePopState = () => {
-			setPath(window.location.pathname)
-		}
-
+		const handlePopState = () => setPath(window.location.pathname)
 		window.addEventListener('popstate', handlePopState)
-
-		return () => {
-			window.removeEventListener('popstate', handlePopState)
-		}
+		return () => window.removeEventListener('popstate', handlePopState)
 	}, [])
 
-
-	// Adds a URL to browser history and immediately updates the rendered route
-	const navigateTo = nextPath => {
-		window.history.pushState({}, '', nextPath)
+	const navigateTo = useCallback(nextPath => {
+		if (window.location.pathname !== nextPath) window.history.pushState({}, '', nextPath)
 		setPath(nextPath)
-	}
-
-
-	// Saves any host credentials and navigates to the selected or newly created game
-	const handleEnterGame = gameOrGameId => {
-		setIsConfiguringGame(false)
-
-		if (typeof gameOrGameId === 'string') {
-			setPrefetchedGame(null)
-			navigateTo(`/game/${gameOrGameId}`)
-			return
-		}
-
-		if (gameOrGameId.adminToken) {
-			localStorage.setItem(
-				`blokit-admin-${gameOrGameId.gameId}`,
-				gameOrGameId.adminToken,
-			)
-		}
-
-		setPrefetchedGame(gameOrGameId)
-		navigateTo(`/game/${gameOrGameId.gameId}`)
-	}
-
-
-	// Refreshes the game route after the player has selected a color and joined
-	const handleStartPlaying = () => {
-		setPlayerSessionVersion(version => version + 1)
-	}
-
-
-	// Returns the player to the application's landing screen
-	const handleLeaveGame = () => {
+	}, [])
+	const handleLeaveRoom = useCallback(() => navigateTo('/'), [navigateTo])
+	const handleRemoved = useCallback(() => {
+		setEntryError('You were removed from the room')
 		navigateTo('/')
+	}, [navigateTo])
+	const handleStartPlaying = useCallback(gameId => navigateTo(`/game/${gameId}`), [navigateTo])
+	const handleNeedsSession = useCallback(() => navigateTo(`/lobby/${route.gameId}`), [navigateTo, route.gameId])
+
+	const handleEnterRoom = async gameId => {
+		if (enteringRef.current) return
+		enteringRef.current = true
+		setIsEntering(true)
+		setEntryError('')
+		try {
+			let roomId = gameId
+			if (!roomId) {
+				const room = await createGame({
+					lobbyMode: true,
+					boardLayout: 'irregular',
+					playerCount: 4,
+					moveTimeLimitSeconds: 60,
+				})
+				roomId = room.gameId
+				localStorage.setItem(`blokit-admin-${roomId}`, room.adminToken)
+			}
+			const { game } = await enterLobby(roomId)
+			navigateTo(`/${game.status === 'waiting' ? 'lobby' : 'game'}/${roomId}`)
+		} catch (error) {
+			setEntryError(error.message)
+		} finally {
+			enteringRef.current = false
+			setIsEntering(false)
+		}
 	}
 
-	if (route.screen === 'createGame') {
+	if (route.screen === 'home') {
 		return (
-			<>
-				{isConfiguringGame ? (
-					<GameSettingsScreen
-						onCreateRoom={handleEnterGame}
-						onBack={() => setIsConfiguringGame(false)}
-					/>
-				) : (
-					<CreateGameScreen
-						onEnterGame={handleEnterGame}
-						onConfigureGame={() => setIsConfiguringGame(true)}
-					/>
-				)}
-			</>
+			<CreateGameScreen
+				onEnterGame={handleEnterRoom}
+				onConfigureGame={() => handleEnterRoom()}
+				actionError={entryError}
+				isEntering={isEntering}
+			/>
 		)
 	}
 
-	if (!hasPlayerCredentials) {
+	if (route.screen === 'game' && localStorage.getItem(`blokit-player-${route.gameId}`)) {
 		return (
-			<PlayerInfoScreen
+			<GameScreen
+				key={route.gameId}
 				gameId={route.gameId}
-				initialGame={prefetchedGame?.gameId === route.gameId ? prefetchedGame : null}
-				onJoined={handleStartPlaying}
-				onBack={handleLeaveGame}
+				onLeaveGame={handleLeaveRoom}
+				onNeedsColor={handleNeedsSession}
 			/>
 		)
 	}
 
 	return (
-		<GameScreen
-			key={`${route.gameId}-${playerSessionVersion}`}
+		<LobbyScreen
+			key={route.gameId}
 			gameId={route.gameId}
-			onLeaveGame={handleLeaveGame}
-			onNeedsColor={() => setPlayerSessionVersion(version => version + 1)}
+			onLeave={handleLeaveRoom}
+			onStarted={handleStartPlaying}
+			onRemoved={handleRemoved}
 		/>
 	)
 }

@@ -1,7 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
 import { wakeGameServer } from '../services/api'
+import './HomeScreen.css'
 
-function CreateGameScreen({ onEnterGame, onConfigureGame }) {
+const BACKGROUND_PIECES = [
+	{ left: 9, top: 12, color: '#8B5CF6', shape: ['##.', '.##', '..#'] },
+	{ left: 80, top: 16, color: '#F97316', shape: ['####', '#...'] },
+	{ left: 6, top: 66, color: '#14B8A6', shape: ['.#', '##', '.#'] },
+	{ left: 84, top: 68, color: '#3B82F6', shape: ['##', '##'] },
+	{ left: 22, top: 84, color: '#EC4899', shape: ['#####'] },
+	{ left: 66, top: 82, color: '#EAB308', shape: ['#..', '###'] },
+]
+
+function CreateGameScreen({ onEnterGame, onConfigureGame, actionError = '', isEntering = false }) {
 	const [inviteCode, setInviteCode] = useState('')
 	const [error, setError] = useState('')
 	const codeInputRefs = useRef([])
@@ -145,23 +155,50 @@ function CreateGameScreen({ onEnterGame, onConfigureGame }) {
 
 	
 	return (
-		<div ref={pageRef} className="startPage createGamePage">
-			<h1 className="gameTitle">Blokit</h1>
+		<div ref={pageRef} className="startPage createGamePage homeScreen">
+			<div className="homeBackground" aria-hidden="true">
+				{BACKGROUND_PIECES.map((piece, pieceIndex) => (
+					<span
+						key={pieceIndex}
+						className="homeDecorationPiece"
+						style={{
+							left: `${piece.left}%`,
+							top: `${piece.top}%`,
+							'--home-piece-color': piece.color,
+							'--home-piece-columns': piece.shape[0].length,
+						}}
+					>
+						{piece.shape.flatMap((row, rowIndex) =>
+							[...row].map((cell, columnIndex) => cell === '#' && (
+								<i
+									key={`${rowIndex}-${columnIndex}`}
+									style={{ gridRow: rowIndex + 1, gridColumn: columnIndex + 1 }}
+								/>
+							))
+						)}
+					</span>
+				))}
+			</div>
 
-			<div className="startPanel createGamePanel">
-				<h2>Play online</h2>
+			<h1 className="gameTitle homeLogo">
+				<span className="homeLogoMark" aria-hidden="true">
+					<i />
+					<i />
+					<i />
+				</span>
+				<span>Blokit</span>
+			</h1>
 
-				<p>Create a new room or join friends with their 6 digit invite code.</p>
-
-				<button onClick={onConfigureGame}>
-					Create Game
+			<div className="startPanel createGamePanel homeCard">
+				<button className="homeCreateButton" onClick={onConfigureGame} disabled={isEntering}>
+					Create game
 				</button>
 
-				<div className="startDivider">
-					<span>or</span>
+				<div className="startDivider homeDivider">
+					<span>or join with a code</span>
 				</div>
 
-				<form className="joinForm" onSubmit={handleJoinGame}>
+				<form className="joinForm homeJoinForm" onSubmit={handleJoinGame}>
 					<div className="codeInputGroup" aria-label="6 digit invite code">
 						{Array.from({ length: 6 }).map((_, index) => (
 							<input
@@ -181,14 +218,14 @@ function CreateGameScreen({ onEnterGame, onConfigureGame }) {
 						))}
 					</div>
 
-					<button type="submit" disabled={inviteCode.length !== 6}>
-						Join Game
+					<button className="homeJoinButton" type="submit" disabled={inviteCode.length !== 6 || isEntering}>
+						Join game
 					</button>
 				</form>
 
-				{error && (
+				{(error || actionError) && (
 					<div className="statusMessage statusMessageError">
-						{error}
+						{error || actionError}
 					</div>
 				)}
 			</div>

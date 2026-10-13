@@ -18,7 +18,9 @@ async function parseResponse(response) {
 	const data = await response.json()
 
 	if (!response.ok) {
-		throw new Error(data.detail || 'Request failed.')
+		const error = new Error(typeof data.detail === 'string' ? data.detail : 'Request failed.')
+		error.status = response.status
+		throw error
 	}
 
 	return data
@@ -89,3 +91,38 @@ export function gameSocketUrl(gameId, credentials) {
 
 	return `${WS_BASE}/games/${gameId}/ws?${params.toString()}`
 }
+
+
+async function lobbyRequest(gameId, action, credentials, changes = {}, method = 'POST') {
+	const response = await fetch(`${API_BASE}/games/${gameId}/${action}`, {
+		method,
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({
+			...changes,
+			playerId: credentials.playerId,
+			playerToken: credentials.playerToken,
+		}),
+	})
+	return parseResponse(response)
+}
+
+export const updateLobbyProfile = (gameId, credentials, changes) =>
+	lobbyRequest(gameId, 'profile', credentials, changes, 'PATCH')
+
+export const updateLobbySettings = (gameId, credentials, settings) =>
+	lobbyRequest(gameId, 'settings', credentials, settings, 'PATCH')
+
+export const startLobbyGame = (gameId, credentials) =>
+	lobbyRequest(gameId, 'start', credentials)
+
+export const leaveLobby = (gameId, credentials) =>
+	lobbyRequest(gameId, 'leave-room', credentials)
+
+export const addLobbyBot = (gameId, credentials, seat) =>
+	lobbyRequest(gameId, 'bots', credentials, { seat })
+
+export const fillLobbyBots = (gameId, credentials) =>
+	lobbyRequest(gameId, 'fill-bots', credentials)
+
+export const removeLobbyPlayer = (gameId, credentials, targetPlayerId) =>
+	lobbyRequest(gameId, 'remove-player', credentials, { targetPlayerId })

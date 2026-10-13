@@ -7,6 +7,7 @@ import time
 from fastapi import FastAPI, Header, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+from starlette.websockets import WebSocketState
 
 from app.game.board import Board
 from app.game.board_layouts import (
@@ -46,6 +47,8 @@ PLAYER_COLORS = [
     {"color": "Orange"},
 ]
 
+LOBBY_COLOR_ORDER = ["Purple", "Orange", "Red", "Cyan", "Blue", "Yellow", "Pink", "Green"]
+
 games = {}
 connections = {}
 turn_tasks = {}
@@ -61,7 +64,7 @@ class MoveRequest(BaseModel):
 
 
 class JoinRequest(BaseModel):
-    color: str
+    color: str | None = None
     name: str | None = Field(default=None, max_length=24)
     adminToken: str | None = None
 
@@ -76,6 +79,7 @@ class GameSettingsRequest(BaseModel):
     boardLayout: str = "square"
     playerCount: int = Field(default=4, ge=MIN_PLAYERS, le=MAX_PLAYERS)
     players: dict[str, PlayerSettingsRequest] = Field(default_factory=dict)
+    lobbyMode: bool = False
 
 
 class CreateGameRequest(BaseModel):
@@ -90,6 +94,25 @@ class QuitRequest(BaseModel):
 class RestartRequest(BaseModel):
     playerId: str
     playerToken: str
+
+
+class LobbyProfileRequest(QuitRequest):
+    name: str | None = Field(default=None, max_length=24)
+    color: str | None = None
+
+
+class LobbySettingsRequest(QuitRequest):
+    boardLayout: str
+    playerCount: int = Field(ge=MIN_PLAYERS, le=MAX_PLAYERS)
+    moveTimeLimitSeconds: int | None
+
+
+class AddLobbyBotRequest(QuitRequest):
+    seat: int = Field(ge=1, le=MAX_PLAYERS)
+
+
+class RemoveLobbyPlayerRequest(QuitRequest):
+    targetPlayerId: str
 
 
 def make_piece_set():
@@ -152,7 +175,7 @@ def normalize_game_settings(settings):
         supplied_player = settings.players.get(player_key)
         players[player_key] = {
             "color": None,
-            "isBot": supplied_player.isBot if supplied_player else False,
+            "isBot": supplied_player.isBot if supplied_player and not settings.lobbyMode else False,
         }
 
     if all(player["isBot"] for player in players.values()):
@@ -178,7 +201,9 @@ def create_game_state(game_id, settings):
 
     return {
         "gameId": game_id,
+        "revision": 0,
         "settings": normalized_settings,
+        "lobbyMode": settings.lobbyMode,
         "boardConfig": board_config,
         "adminPlayerId": None,
         "adminToken": secrets.token_urlsafe(24),
@@ -191,6 +216,8 @@ def create_game_state(game_id, settings):
         "status": "waiting",
         "hasStarted": False,
         "nextPlayerNumber": 1,
+        "nextBotNumber": 1,
+        "removedPlayers": {},
         "notice": None,
         "winnerId": None,
         "winnerIds": [],
@@ -213,7 +240,7 @@ def public_player(player, viewer_id=None):
                 "placed": piece["placed"],
                 **(
                     {"ability": piece["ability"]}
-                    if player["id"] == viewer_id and not piece["placed"] and piece.get("ability")
+                    if (player["id"] == viewer_id or piece["placed"]) and piece.get("ability")
                     else {}
                 ),
             }
@@ -233,8 +260,10 @@ def game_snapshot(game, viewer_id=None):
 
     return {
         "gameId": game["gameId"],
+        "revision": game.get("revision", 0),
         "inviteCode": game["gameId"],
         "settings": game["settings"],
+        "lobbyMode": game.get("lobbyMode", False),
         "boardConfig": {
             "id": game["boardConfig"]["id"],
             "layout": game["boardConfig"]["layout"],
@@ -285,6 +314,9 @@ def get_player(game, player_id):
 def authenticate_player(game, player_id, player_token):
     player = get_player(game, player_id)
 
+    if game.get("removedPlayers", {}).get(player_id) == player_token and player_token is not None:
+        raise HTTPException(status_code=403, detail="You were removed from the room")
+
     if not player or player.get("isBot") or player["token"] != player_token:
         raise HTTPException(status_code=403, detail="Invalid player credentials.")
 
@@ -312,8 +344,11 @@ def assign_start_positions(game):
         player["corner"] = deepcopy(position)
 
 
-def start_game_if_ready(game):
+def start_game_if_ready(game, manual=False):
     if game["hasStarted"]:
+        return False
+
+    if game.get("lobbyMode") and not manual:
         return False
 
     human_settings = [
@@ -651,6 +686,8 @@ def refresh_out_of_moves(game):
 
 
 async def broadcast_game(game_id):
+    game = games[game_id]
+    game["revision"] = game.get("revision", 0) + 1
     sockets = list(connections.get(game_id, []))
     if not sockets:
         return
@@ -670,7 +707,7 @@ async def broadcast_game(game_id):
                 "type": "game_state",
                 "game": game_snapshot(game, viewer_id),
             })
-        except RuntimeError:
+        except (RuntimeError, WebSocketDisconnect):
             stale_sockets.append(socket)
 
     for socket in stale_sockets:
@@ -898,6 +935,12 @@ def get_game_state(
 async def join_game(game_id: str, request: JoinRequest):
     game = get_game_or_404(game_id)
 
+    if game.get("lobbyMode") and len(game["players"]) >= game["settings"]["playerCount"]:
+        raise HTTPException(status_code=409, detail="Room is full")
+
+    if game.get("lobbyMode") and game["status"] != "waiting":
+        raise HTTPException(status_code=409, detail="This room is no longer accepting players.")
+
     player_name = request.name.strip() if request.name is not None else None
     if request.name is not None and not player_name:
         raise HTTPException(status_code=400, detail="Enter a game name.")
@@ -908,6 +951,9 @@ async def join_game(game_id: str, request: JoinRequest):
         if game["adminPlayerId"] is not None:
             raise HTTPException(status_code=409, detail="This game already has an admin.")
 
+    if game.get("lobbyMode") and game["adminPlayerId"] is None and not request.adminToken:
+        raise HTTPException(status_code=409, detail="The host is still joining this room.")
+
     player_count = game["settings"]["playerCount"]
     if len(game["players"]) >= player_count:
         raise HTTPException(
@@ -915,11 +961,17 @@ async def join_game(game_id: str, request: JoinRequest):
             detail=f"This game already has {player_count} players.",
         )
 
+    requested_color = request.color
+    if game.get("lobbyMode") and requested_color is None:
+        requested_color = next(
+            color for color in LOBBY_COLOR_ORDER
+            if not any(player["color"] == color for player in game["players"])
+        )
     color_option = next(
         (
             deepcopy(option)
             for option in PLAYER_COLORS
-            if option["color"].lower() == request.color.lower()
+            if requested_color and option["color"].lower() == requested_color.lower()
         ),
         None,
     )
@@ -945,7 +997,7 @@ async def join_game(game_id: str, request: JoinRequest):
         color_option,
         player_number,
         settings_player_key=settings_player_key,
-        player_name=player_name,
+        player_name=player_name or (f"Player {player_number}" if game.get("lobbyMode") else None),
     )
     game["players"].append(player)
     game["settings"]["players"][player["settingsPlayerKey"]]["color"] = player["color"]
@@ -966,9 +1018,185 @@ async def join_game(game_id: str, request: JoinRequest):
     }
 
 
+def require_waiting_lobby(game):
+    if not game.get("lobbyMode") or game["status"] != "waiting":
+        raise HTTPException(status_code=409, detail="This room is not in the lobby.")
+
+
+def authenticate_lobby_host(game, request):
+    player = authenticate_player(game, request.playerId, request.playerToken)
+    require_waiting_lobby(game)
+    if player["id"] != game["adminPlayerId"]:
+        raise HTTPException(status_code=403, detail="Only the host can change settings or start the game.")
+    return player
+
+
+def reseat_lobby_players(game):
+    for settings_player in game["settings"]["players"].values():
+        settings_player["color"] = None
+        settings_player["isBot"] = False
+    valid_keys = set(game["settings"]["players"])
+    occupied_keys = {player["settingsPlayerKey"] for player in game["players"] if player["settingsPlayerKey"] in valid_keys}
+    for player in game["players"]:
+        if player["settingsPlayerKey"] not in valid_keys:
+            player["settingsPlayerKey"] = next(key for key in game["settings"]["players"] if key not in occupied_keys)
+            occupied_keys.add(player["settingsPlayerKey"])
+        settings_player = game["settings"]["players"][player["settingsPlayerKey"]]
+        settings_player["color"] = player["color"]
+        settings_player["isBot"] = player.get("isBot", False)
+
+
+def make_lobby_bot(game, seat_key):
+    color = next(color for color in LOBBY_COLOR_ORDER if not any(player["color"] == color for player in game["players"]))
+    option = next(option for option in PLAYER_COLORS if option["color"] == color)
+    bot = make_runtime_player(
+        option,
+        game["nextPlayerNumber"],
+        settings_player_key=seat_key,
+        is_bot=True,
+        player_name=f'Bot {game["nextBotNumber"]}',
+    )
+    game["nextPlayerNumber"] += 1
+    game["nextBotNumber"] += 1
+    game["players"].append(bot)
+    reseat_lobby_players(game)
+
+
+@app.post("/games/{game_id}/bots")
+async def add_lobby_bot(game_id: str, request: AddLobbyBotRequest):
+    game = get_game_or_404(game_id)
+    host = authenticate_lobby_host(game, request)
+    seat_key = f"Player {request.seat}"
+    if seat_key not in game["settings"]["players"]:
+        raise HTTPException(status_code=422, detail="Choose a seat in this room.")
+    if any(player["settingsPlayerKey"] == seat_key for player in game["players"]):
+        raise HTTPException(status_code=409, detail="That seat is already filled.")
+    make_lobby_bot(game, seat_key)
+    await broadcast_game(game_id)
+    return game_snapshot(game, host["id"])
+
+
+@app.post("/games/{game_id}/fill-bots")
+async def fill_lobby_bots(game_id: str, request: QuitRequest):
+    game = get_game_or_404(game_id)
+    host = authenticate_lobby_host(game, request)
+    occupied_keys = {player["settingsPlayerKey"] for player in game["players"]}
+    for seat_key in game["settings"]["players"]:
+        if seat_key not in occupied_keys:
+            make_lobby_bot(game, seat_key)
+    await broadcast_game(game_id)
+    return game_snapshot(game, host["id"])
+
+
+@app.post("/games/{game_id}/remove-player")
+async def remove_lobby_player(game_id: str, request: RemoveLobbyPlayerRequest):
+    game = get_game_or_404(game_id)
+    host = authenticate_lobby_host(game, request)
+    if request.targetPlayerId == host["id"]:
+        raise HTTPException(status_code=409, detail="The host cannot remove their own seat.")
+    player = get_player(game, request.targetPlayerId)
+    if player is None:
+        raise HTTPException(status_code=404, detail="Player not found in this room.")
+    if not player.get("isBot"):
+        game["removedPlayers"][player["id"]] = player["token"]
+    game["players"].remove(player)
+    player["token"] = None
+    reseat_lobby_players(game)
+    for socket in list(connections.get(game_id, [])):
+        if socket.state.player_id != player["id"]:
+            continue
+        connections[game_id].discard(socket)
+        try:
+            await socket.send_json({"type": "room_removed", "message": "You were removed from the room"})
+            await socket.close(code=1008, reason="You were removed from the room")
+        except (RuntimeError, WebSocketDisconnect):
+            pass
+    await broadcast_game(game_id)
+    return game_snapshot(game, host["id"])
+
+
+@app.patch("/games/{game_id}/profile")
+async def update_lobby_profile(game_id: str, request: LobbyProfileRequest):
+    game = get_game_or_404(game_id)
+    player = authenticate_player(game, request.playerId, request.playerToken)
+    require_waiting_lobby(game)
+    name = request.name.strip() if request.name is not None else player["name"]
+    if not name:
+        raise HTTPException(status_code=422, detail="Enter your name.")
+    color = player["color"]
+    if request.color is not None:
+        option = next((option for option in PLAYER_COLORS if option["color"].lower() == request.color.lower()), None)
+        if not option:
+            raise HTTPException(status_code=422, detail="Choose one of the available colours.")
+        color = option["color"]
+        if any(other["id"] != player["id"] and other["color"] == color for other in game["players"]):
+            raise HTTPException(status_code=409, detail="That colour has already been chosen.")
+    player["name"] = name
+    player["color"] = color
+    game["settings"]["players"][player["settingsPlayerKey"]]["color"] = color
+    await broadcast_game(game_id)
+    return game_snapshot(game, player["id"])
+
+
+@app.patch("/games/{game_id}/settings")
+async def update_lobby_settings(game_id: str, request: LobbySettingsRequest):
+    game = get_game_or_404(game_id)
+    host = authenticate_lobby_host(game, request)
+    if request.playerCount < len(game["players"]):
+        raise HTTPException(status_code=409, detail="Player count cannot be below the number already joined.")
+    settings = normalize_game_settings(GameSettingsRequest(
+        boardLayout=request.boardLayout,
+        playerCount=request.playerCount,
+        moveTimeLimitSeconds=request.moveTimeLimitSeconds,
+        lobbyMode=True,
+    ))
+    config = get_board_config(settings["boardLayout"], settings["playerCount"])
+    game["settings"] = settings
+    game["boardConfig"] = config
+    game["board"] = Board(config)
+    reseat_lobby_players(game)
+    await broadcast_game(game_id)
+    return game_snapshot(game, host["id"])
+
+
+@app.post("/games/{game_id}/start")
+async def start_lobby_game(game_id: str, request: QuitRequest):
+    game = get_game_or_404(game_id)
+    host = authenticate_lobby_host(game, request)
+    if len(game["players"]) != game["settings"]["playerCount"]:
+        raise HTTPException(status_code=409, detail="Wait until every player has joined.")
+    start_game_if_ready(game, manual=True)
+    await broadcast_game(game_id)
+    schedule_turn(game_id)
+    return game_snapshot(game, host["id"])
+
+
+@app.post("/games/{game_id}/leave-room")
+async def leave_lobby(game_id: str, request: QuitRequest):
+    game = get_game_or_404(game_id)
+    player = authenticate_player(game, request.playerId, request.playerToken)
+    require_waiting_lobby(game)
+    game["players"].remove(player)
+    player["token"] = None
+    reseat_lobby_players(game)
+    if game["adminPlayerId"] == player["id"]:
+        remaining_humans = [remaining for remaining in game["players"] if not remaining.get("isBot")]
+        game["adminPlayerId"] = min(remaining_humans, key=lambda player: player["joinedOrder"])["id"] if remaining_humans else None
+        game["adminToken"] = secrets.token_urlsafe(24)
+        if not remaining_humans:
+            game["players"].clear()
+            reseat_lobby_players(game)
+    if not game["players"]:
+        game["status"] = "closed"
+    await broadcast_game(game_id)
+    return {"success": True}
+
+
 @app.post("/games/{game_id}/quit")
 async def quit_game(game_id: str, request: QuitRequest):
     game = get_game_or_404(game_id)
+    if game.get("lobbyMode") and game["status"] == "waiting":
+        return await leave_lobby(game_id, request)
     player = authenticate_player(game, request.playerId, request.playerToken)
     convert_player_to_bot(game, player)
     await broadcast_game(game_id)
@@ -1031,6 +1259,10 @@ async def game_websocket(websocket: WebSocket, game_id: str, playerId: str, toke
 
     player = get_player(game, playerId)
 
+    if game.get("removedPlayers", {}).get(playerId) == token:
+        await websocket.close(code=1008, reason="You were removed from the room")
+        return
+
     if not player or player.get("isBot") or player["token"] != token:
         await websocket.close(code=1008)
         return
@@ -1045,7 +1277,7 @@ async def game_websocket(websocket: WebSocket, game_id: str, playerId: str, toke
     try:
         while True:
             message = await websocket.receive_json()
-            if player.get("isBot") or player["token"] != token:
+            if player not in game["players"] or player.get("isBot") or player["token"] != token:
                 await websocket.close(code=1008)
                 break
             action = message.get("type")
@@ -1078,6 +1310,10 @@ async def game_websocket(websocket: WebSocket, game_id: str, playerId: str, toke
 
     except WebSocketDisconnect:
         pass
+    except RuntimeError:
+        # A host can close this socket while its receive loop is still running.
+        if websocket.application_state != WebSocketState.DISCONNECTED:
+            raise
     finally:
         connections[game_id].discard(websocket)
         if player in game["players"] and not player.get("isBot"):
