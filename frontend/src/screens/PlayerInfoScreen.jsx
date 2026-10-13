@@ -4,8 +4,8 @@ import PieceBagButton from '../components/PieceBagButton'
 import { getPlayerColorHex } from '../playerColors'
 
 function PlayerInfoScreen({ gameId, initialGame, onJoined, onBack }) {
-	const storageKey = `blokit-player-${gameId}`
-	const adminToken = localStorage.getItem(`blokit-admin-${gameId}`)
+	const storageKey = `tipto-player-${gameId}`
+	const adminToken = localStorage.getItem(`tipto-admin-${gameId}`)
 	const [game, setGame] = useState(initialGame)
 	const [step, setStep] = useState('color')
 	const [selectedColor, setSelectedColor] = useState(null)
@@ -77,7 +77,7 @@ function PlayerInfoScreen({ gameId, initialGame, onJoined, onBack }) {
 
 	return (
 		<div className="startPage">
-			<h1 className="gameTitle">Blokit</h1>
+			<h1 className="gameTitle">Tipto</h1>
 				{step === 'color' ? (
 					<div className="startPanel chooseColorPanel">
 						<div className="inviteLabel">Invite code</div>

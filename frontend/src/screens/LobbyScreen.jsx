@@ -80,8 +80,8 @@ function LobbyScreen({ gameId, onLeave, onStarted, onRemoved }) {
 		if (removedRef.current || leavingRef.current) return
 		removedRef.current = true
 		clearTimeout(nameTimerRef.current)
-		localStorage.removeItem(`blokit-player-${gameId}`)
-		localStorage.removeItem(`blokit-admin-${gameId}`)
+		localStorage.removeItem(`tipto-player-${gameId}`)
+		localStorage.removeItem(`tipto-admin-${gameId}`)
 		onRemoved()
 	}, [gameId, onRemoved])
 
@@ -244,13 +244,13 @@ function LobbyScreen({ gameId, onLeave, onStarted, onRemoved }) {
 		clearTimeout(nameTimerRef.current)
 		try {
 			if (session && me) await leaveLobby(gameId, session)
-			localStorage.removeItem(`blokit-player-${gameId}`)
-			localStorage.removeItem(`blokit-admin-${gameId}`)
+			localStorage.removeItem(`tipto-player-${gameId}`)
+			localStorage.removeItem(`tipto-admin-${gameId}`)
 			onLeave()
 		} catch (error) {
 			if (error.status === 403 || error.status === 404) {
-				localStorage.removeItem(`blokit-player-${gameId}`)
-				localStorage.removeItem(`blokit-admin-${gameId}`)
+				localStorage.removeItem(`tipto-player-${gameId}`)
+				localStorage.removeItem(`tipto-admin-${gameId}`)
 				onLeave()
 				return
 			}
@@ -288,7 +288,7 @@ function LobbyScreen({ gameId, onLeave, onStarted, onRemoved }) {
 	return (
 		<div className="lobbyScreen">
 			<header className="lobbyTopBar">
-				<div className="lobbyLogo"><span className="lobbyLogoMark" aria-hidden="true"><i /><i /><i /></span>Blokit</div>
+				<div className="lobbyLogo"><span className="lobbyLogoMark" aria-hidden="true"><i /><i /><i /></span>Tipto</div>
 				<button type="button" className="lobbyLeave" onClick={leaveRoom} disabled={leaving || starting}>Leave room</button>
 			</header>
 			<main className="lobbyMain">

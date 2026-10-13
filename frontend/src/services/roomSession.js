@@ -6,7 +6,7 @@ export function enterLobby(gameId) {
 	if (pendingEntries.has(gameId)) return pendingEntries.get(gameId)
 
 	const entry = (async () => {
-		const storageKey = `blokit-player-${gameId}`
+		const storageKey = `tipto-player-${gameId}`
 		const saved = localStorage.getItem(storageKey)
 		if (saved) {
 			const credentials = JSON.parse(saved)
@@ -24,7 +24,7 @@ export function enterLobby(gameId) {
 		if (!room.lobbyMode || room.status !== 'waiting') {
 			throw new Error('This room is no longer accepting players.')
 		}
-		const adminToken = localStorage.getItem(`blokit-admin-${gameId}`) || undefined
+		const adminToken = localStorage.getItem(`tipto-admin-${gameId}`) || undefined
 		const credentials = await joinGame(gameId, undefined, undefined, adminToken)
 		localStorage.setItem(storageKey, JSON.stringify(credentials))
 		return { game: await getGame(gameId, credentials), credentials }

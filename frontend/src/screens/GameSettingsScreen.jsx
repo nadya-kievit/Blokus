@@ -97,7 +97,7 @@ function GameSettingsScreen({ onCreateRoom, onBack }) {
 	
 	return (
 		<div className="startPage">
-			<h1 className="gameTitle">Blokit</h1>
+			<h1 className="gameTitle">Tipto</h1>
 
 			<div className="startPanel settingsPanel">
 				<h2>Game settings</h2>

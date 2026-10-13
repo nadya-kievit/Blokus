@@ -186,7 +186,7 @@ function CreateGameScreen({ onEnterGame, onConfigureGame, actionError = '', isEn
 					<i />
 					<i />
 				</span>
-				<span>Blokit</span>
+				<span>Tipto</span>
 			</h1>
 
 			<div className="startPanel createGamePanel homeCard">

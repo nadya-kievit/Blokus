@@ -1,4 +1,4 @@
-## What is Blokus?
+## What is Tipto?
 
 ## How to Play
 

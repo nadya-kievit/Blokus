@@ -109,7 +109,7 @@ function nextPieceOrientations(rotation, flipped) {
 
 function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 
-	const storageKey = `blokit-player-${gameId}`
+	const storageKey = `tipto-player-${gameId}`
 	const socketRef = useRef(null)
 	const lastHoverTargetRef = useRef(null)
 	const cursorPieceRef = useRef(null)
@@ -654,7 +654,7 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 	if (!game) {
 		return (
 			<div className="gamePage gameLoading">
-				<h1 className="gameHeaderTitle">Blokit</h1>
+				<h1 className="gameHeaderTitle">Tipto</h1>
 
 				<div className="startPanel">
 					<h2>Loading game...</h2>

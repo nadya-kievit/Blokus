@@ -52,7 +52,7 @@ function App() {
 					moveTimeLimitSeconds: 60,
 				})
 				roomId = room.gameId
-				localStorage.setItem(`blokit-admin-${roomId}`, room.adminToken)
+				localStorage.setItem(`tipto-admin-${roomId}`, room.adminToken)
 			}
 			const { game } = await enterLobby(roomId)
 			navigateTo(`/${game.status === 'waiting' ? 'lobby' : 'game'}/${roomId}`)
@@ -75,7 +75,7 @@ function App() {
 		)
 	}
 
-	if (route.screen === 'game' && localStorage.getItem(`blokit-player-${route.gameId}`)) {
+	if (route.screen === 'game' && localStorage.getItem(`tipto-player-${route.gameId}`)) {
 		return (
 			<GameScreen
 				key={route.gameId}

@@ -3,7 +3,7 @@ function Header({ gameId, isQuitting, onCopyInvite, onQuit, children }) {
 		<header className="gameHeader">
 			<h1 className="gameHeaderTitle">
 				<span className="gameLogoMark" aria-hidden="true"><i /><i /><i /></span>
-				Blokit
+				Tipto
 			</h1>
 			{children}
 			<div className="gameActions">
