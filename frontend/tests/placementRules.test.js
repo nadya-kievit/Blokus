@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
-import { isValidPlacement } from '../src/game/placementRules.js'
+import {
+	canPlacePieceInAnyOrientation,
+	canPlacePieceInOrientation,
+	isValidPlacement,
+} from '../src/game/placementRules.js'
 
 function makeBoard(width = 12, height = 12) {
 	return Array.from({ length: height }, () => Array.from({ length: width }, () => ({
@@ -41,6 +45,17 @@ test('Connector previews permit touching multiple pieces', () => {
 	board[3][3] = { occupied: true, player: 'p1', playable: true }
 	board[3][5] = { occupied: true, player: 'p1', playable: true }
 	assert.equal(isValidPlacement(board, [{ row: 3, col: 4 }], ownPlayer, false, [], 'connector'), true)
+})
+
+test('piece remains playable when only another orientation has a placement', () => {
+	const board = makeBoard(1, 2)
+	const player = { id: 'p1', pieces: [], startPosition: { row: 0, col: 0 } }
+	const piece = { name: 'domino', cells: [[0, 0], [0, 1]], rotation: 0, flipped: false }
+	const players = [player]
+
+	assert.equal(canPlacePieceInOrientation(board, piece, 0, false, player, 0, true, players), false)
+	assert.equal(canPlacePieceInOrientation(board, piece, 90, false, player, 0, true, players), true)
+	assert.equal(canPlacePieceInAnyOrientation(board, piece, player, 0, true, players), true)
 })
 
 const layouts = JSON.parse(readFileSync(new URL('../../backend/app/game/board_layouts_15.json', import.meta.url), 'utf8'))

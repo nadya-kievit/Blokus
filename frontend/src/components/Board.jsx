@@ -29,33 +29,35 @@ function Board({
 		}
 	}
 	return (
-		<section className="boardPanel" aria-label="Game board" style={{ '--board-columns': viewWidth, '--board-rows': viewHeight }}>
-			<div className="board" data-game-board onMouseLeave={onBoardLeave}>
-				{Array.from({ length: viewHeight }, (_, viewRow) => Array.from({ length: viewWidth }, (_, viewCol) => {
-					const position = viewToBoard(viewRow, viewCol)
-					const key = `${position.row},${position.col}`
-					const pending = pendingCells.has(key)
-					const value = pending
-						? { ...board[position.row][position.col], occupied: true, player: pendingPlacement.playerId, pieceId: pendingPlacement.pieceId, color: pendingPlacement.color }
-						: board[position.row][position.col]
-					const startPlayer = startingPlayers.get(key)
-					return <Tile key={key} value={value} {...position} viewRow={viewRow} viewCol={viewCol}
-						onClick={onTileClick} onHover={onTileHover} isHovered={hovered.has(key)}
-						startPlayer={startPlayer} isOwnStart={startPlayer?.id === currentPlayerId}
-						ability={pending ? pendingPlacement.ability : abilities.get(value.pieceId)}
-						preview={preview} isPending={pending} isLastMove={Boolean(value.occupied && lastCells.has(key))} />
-				}))}
-			</div>
-			<div className="boardLegend">
-				{firstMove && <>
-					<span><i className="startingSquareLegend" style={{ '--start-color': ownColour }} />Starting squares</span>
-					<span><i className="startingSquareLegend ownStartingSquareLegend" style={{ '--start-color': ownColour }} />Yours</span>
-				</>}
-				<span><i className="lastMoveLegend" />Last move</span>
-				<span><i style={tileFinish(ownColour, 'scout', 'list')} />Scout</span>
-				<span><i style={tileFinish(ownColour, 'connector', 'list')} />Connector</span>
-			</div>
-		</section>
+		<div className="boardStage" style={{ '--board-columns': viewWidth, '--board-rows': viewHeight }}>
+			<section className="boardPanel" aria-label="Game board">
+				<div className="board" data-game-board onMouseLeave={onBoardLeave}>
+					{Array.from({ length: viewHeight }, (_, viewRow) => Array.from({ length: viewWidth }, (_, viewCol) => {
+						const position = viewToBoard(viewRow, viewCol)
+						const key = `${position.row},${position.col}`
+						const pending = pendingCells.has(key)
+						const value = pending
+							? { ...board[position.row][position.col], occupied: true, player: pendingPlacement.playerId, pieceId: pendingPlacement.pieceId, color: pendingPlacement.color }
+							: board[position.row][position.col]
+						const startPlayer = startingPlayers.get(key)
+						return <Tile key={key} value={value} {...position} viewRow={viewRow} viewCol={viewCol}
+							onClick={onTileClick} onHover={onTileHover} isHovered={hovered.has(key)}
+							startPlayer={startPlayer} isOwnStart={startPlayer?.id === currentPlayerId}
+							ability={pending ? pendingPlacement.ability : abilities.get(value.pieceId)}
+							preview={preview} isPending={pending} isLastMove={Boolean(value.occupied && lastCells.has(key))} />
+					}))}
+				</div>
+				<div className="boardLegend">
+					{firstMove && <>
+						<span><i className="startingSquareLegend" style={{ '--start-color': ownColour }} />Starting squares</span>
+						<span><i className="startingSquareLegend ownStartingSquareLegend" style={{ '--start-color': ownColour }} />Yours</span>
+					</>}
+					<span><i className="lastMoveLegend" />Last move</span>
+					<span><i style={tileFinish(ownColour, 'scout', 'list')} />Scout</span>
+					<span><i style={tileFinish(ownColour, 'connector', 'list')} />Connector</span>
+				</div>
+			</section>
+		</div>
 	)
 }
 

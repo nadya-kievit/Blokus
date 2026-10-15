@@ -10,101 +10,16 @@ import TurnBanner from '../components/TurnBanner'
 import WaitingOverlay from '../components/WaitingOverlay'
 import WinnerModal from '../components/WinnerModal'
 import { PLAYER_COLOR_HEX, getPlayerColorHex } from '../playerColors'
-import { isValidPlacement } from '../game/placementRules'
+import {
+	canPlacePieceInAnyOrientation,
+	isValidPlacement,
+	rotationForCells,
+	viewToBoard,
+} from '../game/placementRules'
 import { horizontalFlip, wheelRotation } from '../game/piecePresentation'
 import './GameScreen.css'
 
 const EMPTY_BOARD = []
-
-
-function rotationForCells(cells, rotation, flipped = false) {
-	return cells.map(([row, col]) => {
-		const transformedCol = flipped ? -col : col
-
-		switch (rotation) {
-			case 90:
-				return [-transformedCol, row]
-			case 180:
-				return [-row, -transformedCol]
-			case 270:
-				return [transformedCol, -row]
-			default:
-				return [row, transformedCol]
-		}
-	})
-}
-
-
-function viewToBoard(row, col, rotation, height, width) {
-	switch (rotation) {
-		case 90:
-			return { row: height - 1 - col, col: row }
-		case 180:
-			return { row: height - 1 - row, col: width - 1 - col }
-		case 270:
-			return { row: col, col: width - 1 - row }
-		default:
-			return { row, col }
-	}
-}
-
-
-function canPlacePieceInOrientation(
-	board,
-	piece,
-	rotation,
-	flipped,
-	player,
-	boardRotation,
-	isFirstMove,
-	players,
-) {
-	const boardHeight = board.length
-	const boardWidth = board[0]?.length || 0
-	const viewHeight = boardRotation % 180 === 0 ? boardHeight : boardWidth
-	const viewWidth = boardRotation % 180 === 0 ? boardWidth : boardHeight
-	const rotatedCells = rotationForCells(piece.cells, rotation, flipped)
-	const minRow = Math.min(...rotatedCells.map(cell => cell[0]))
-	const minCol = Math.min(...rotatedCells.map(cell => cell[1]))
-	const pieceRows = Math.max(...rotatedCells.map(cell => cell[0])) - minRow + 1
-	const pieceCols = Math.max(...rotatedCells.map(cell => cell[1])) - minCol + 1
-
-	for (let anchorRow = 0; anchorRow <= viewHeight - pieceRows; anchorRow += 1) {
-		for (let anchorCol = 0; anchorCol <= viewWidth - pieceCols; anchorCol += 1) {
-			const cells = rotatedCells.map(cell => viewToBoard(
-				anchorRow + cell[0] - minRow,
-				anchorCol + cell[1] - minCol,
-				boardRotation,
-				boardHeight,
-				boardWidth,
-			))
-
-			if (isValidPlacement(board, cells, player, isFirstMove, players, piece.ability)) {
-				return true
-			}
-		}
-	}
-
-	return false
-}
-
-
-function nextPieceOrientations(rotation, flipped) {
-	const normalizedRotation = rotation % 360
-	const orientations = []
-
-	for (const nextFlipped of [flipped, !flipped]) {
-		for (const rotationOffset of [90, 180, 270, 0]) {
-			const nextRotation = (normalizedRotation + rotationOffset) % 360
-
-			if (nextRotation === normalizedRotation && nextFlipped === flipped) continue
-
-			orientations.push({ rotation: nextRotation, flipped: nextFlipped })
-		}
-	}
-
-	return orientations
-}
 
 
 function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
@@ -147,44 +62,11 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 	const isFinished = game?.status === 'finished'
 	const isWinnerModalClosed = isFinished && closedWinnerTurnNumber === game?.turnNumber
 	const boardRotation = 0
-	const pieces = useMemo(() => {
-		const isFirstMove = !me?.pieces.some(piece => piece.placed)
-
-		return (me?.pieces || []).map(piece => {
-			const rotation = pieceRotations[piece.name] || 0
-			const flipped = pieceFlips[piece.name] || false
-			const pieceWithOrientation = { ...piece, rotation, flipped }
-
-			if (piece.placed || game?.status !== 'playing') return pieceWithOrientation
-
-			if (canPlacePieceInOrientation(
-				board,
-				piece,
-				rotation,
-				flipped,
-				me,
-				boardRotation,
-				isFirstMove,
-				game?.players || [],
-			)) return pieceWithOrientation
-
-			const nextOrientation = nextPieceOrientations(rotation, flipped)
-				.find(orientation => canPlacePieceInOrientation(
-					board,
-					piece,
-					orientation.rotation,
-					orientation.flipped,
-					me,
-					boardRotation,
-					isFirstMove,
-					game?.players || [],
-				))
-
-			return nextOrientation
-				? { ...pieceWithOrientation, ...nextOrientation }
-				: pieceWithOrientation
-		})
-	}, [board, boardRotation, game?.players, game?.status, me, pieceFlips, pieceRotations])
+	const pieces = useMemo(() => (me?.pieces || []).map(piece => ({
+		...piece,
+		rotation: pieceRotations[piece.name] || 0,
+		flipped: pieceFlips[piece.name] || false,
+	})), [me, pieceFlips, pieceRotations])
 
 	const playablePieceNames = useMemo(() => {
 		const playableNames = new Set()
@@ -204,11 +86,9 @@ function GameScreen({ gameId, onLeaveGame, onNeedsColor }) {
 		for (const piece of pieces) {
 			if (piece.placed) continue
 
-			const isPlayable = canPlacePieceInOrientation(
+			const isPlayable = canPlacePieceInAnyOrientation(
 				board,
 				piece,
-				piece.rotation,
-				piece.flipped,
 				me,
 				boardRotation,
 				isFirstMove,
