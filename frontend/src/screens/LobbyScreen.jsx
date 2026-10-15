@@ -332,7 +332,7 @@ function LobbyScreen({ gameId, onLeave, onStarted, onRemoved }) {
 									const tag = player?.isBot ? 'Bot' : isYou && isSeatHost ? 'You · Host' : isYou ? 'You' : isSeatHost ? 'Host' : null
 									return <div key={player?.id || `empty-${index}`} className={`lobbySeat${player ? '' : ' lobbySeatEmpty'}`}>
 										{player ? <>
-											<span className="lobbySeatColour" style={{ background: COLOURS.find(colour => colour.name === player.color)?.hex }} aria-hidden="true" />
+											<span className={`lobbySeatColour${player.color ? '' : ' lobbySeatColourUnassigned'}`} style={{ background: COLOURS.find(colour => colour.name === player.color)?.hex }} title={player.color ? undefined : 'Colour assigned when the game starts'} aria-hidden="true" />
 											<span className="lobbySeatName" title={player.name}>{player.name}</span>
 											{tag && <span className="lobbySeatTag">{tag}</span>}
 											{isHost && !isYou && <button type="button" className="lobbyRemovePlayer" aria-label={`Remove ${player.name}`} disabled={busy || savingSettings} onClick={() => manageSeats(() => removeLobbyPlayer(gameId, session, player.id))}>×</button>}

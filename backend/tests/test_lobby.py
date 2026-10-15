@@ -252,18 +252,18 @@ def test_closed_socket_does_not_interrupt_lobby_updates(client):
     assert response.status_code == 200
 
 
-def test_host_adds_bot_to_exact_seat_with_next_free_colour(client):
+def test_host_adds_uncoloured_bot_to_exact_seat(client):
     room_id, host = new_lobby(client)
     response = client.post(f"/games/{room_id}/bots", json={**host, "seat": 4})
     assert response.status_code == 200
     bot = response.json()["players"][1]
     assert bot["isBot"] and bot["name"] == "Bot 1"
     assert bot["settingsPlayerKey"] == "Player 4"
-    assert bot["color"] == "Orange"
+    assert bot["color"] is None
     assert all("ability" not in piece for piece in bot["pieces"])
     guest = join(client, room_id)
     assert state(client, room_id)["players"][2]["settingsPlayerKey"] == "Player 2"
-    assert guest["color"] == "Red"
+    assert guest["color"] == "Orange"
     assert client.post(f"/games/{room_id}/bots", json={**host, "seat": 4}).status_code == 409
     assert client.post(f"/games/{room_id}/bots", json={**host, "seat": 5}).status_code == 422
 
@@ -276,11 +276,14 @@ def test_fill_bots_keeps_humans_and_existing_bots_and_waits_for_manual_start(cli
     assert response.status_code == 200
     snapshot = response.json()
     assert len(snapshot["players"]) == 6
-    assert len({player["color"] for player in snapshot["players"]}) == 6
     assert len({player["settingsPlayerKey"] for player in snapshot["players"]}) == 6
     assert {player["id"] for player in snapshot["players"] if not player["isBot"]} == {host["playerId"], guest["playerId"]}
     bots = [player for player in snapshot["players"] if player["isBot"]]
     assert [bot["name"] for bot in bots] == ["Bot 1", "Bot 2", "Bot 3", "Bot 4"]
+    assert all(bot["color"] is None for bot in bots)
+    assert {option["color"] for option in snapshot["availableColors"]}.isdisjoint(
+        {player["color"] for player in snapshot["players"] if not player["isBot"]}
+    )
     assert snapshot["status"] == "waiting"
     assert change_settings(client, room_id, host, playerCount=5).status_code == 409
     again = client.post(f"/games/{room_id}/fill-bots", json=host).json()
@@ -288,7 +291,10 @@ def test_fill_bots_keeps_humans_and_existing_bots_and_waits_for_manual_start(cli
     full = client.post(f"/games/{room_id}/join", json={})
     assert full.status_code == 409 and full.json()["detail"] == "Room is full"
     assert client.post(f"/games/{room_id}/start", json=host).status_code == 200
-    assert len(state(client, room_id)["players"]) == 6
+    started = state(client, room_id)
+    assert len(started["players"]) == 6
+    assert len({player["color"] for player in started["players"]}) == 6
+    assert all(player["color"] is not None for player in started["players"])
     assert client.post(f"/games/{room_id}/bots", json={**host, "seat": 3}).status_code == 409
 
 
@@ -302,7 +308,7 @@ def test_guests_cannot_manage_any_seats_or_impersonate_host(client):
     assert len(state(client, room_id)["players"]) == 2
 
 
-def test_remove_bot_frees_exact_seat_and_colour_without_renumbering(client):
+def test_remove_uncoloured_bot_frees_exact_seat_without_renumbering(client):
     room_id, host = new_lobby(client)
     snapshot = client.post(f"/games/{room_id}/fill-bots", json=host).json()
     bot = snapshot["players"][1]
@@ -310,11 +316,11 @@ def test_remove_bot_frees_exact_seat_and_colour_without_renumbering(client):
     response = client.post(f"/games/{room_id}/remove-player", json={**host, "targetPlayerId": bot["id"]})
     assert response.status_code == 200
     assert [p["id"] for p in response.json()["players"]] == remaining_ids
-    assert bot["color"] in [option["color"] for option in response.json()["availableColors"]]
+    assert bot["color"] is None
     snapshot = client.post(f"/games/{room_id}/bots", json={**host, "seat": 2}).json()
     replacement = snapshot["players"][-1]
     assert replacement["name"] == "Bot 4"
-    assert replacement["color"] == bot["color"]
+    assert replacement["color"] is None
     assert replacement["settingsPlayerKey"] == "Player 2"
     assert replacement["id"] != bot["id"]
 

@@ -272,6 +272,11 @@
 	border-radius: 1px;
 }
 
+.lobbyScreen .lobbySeatColourUnassigned {
+	border: 1px dashed #6B7280;
+	background: repeating-linear-gradient(135deg, #272B38 0 4px, #15171F 4px 8px);
+}
+
 .lobbyScreen .lobbySeatName {
 	min-width: 0;
 	flex: 1;

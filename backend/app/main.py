@@ -369,17 +369,25 @@ def start_game_if_ready(game, manual=False):
         if color_option["color"] not in used_colors
     ]
     random.shuffle(available_colors)
-    runtime_player_keys = {
-        player["settingsPlayerKey"]
+    runtime_players_by_key = {
+        player["settingsPlayerKey"]: player
         for player in game["players"]
     }
 
     for player_key, player_settings in game["settings"]["players"].items():
-        if not player_settings["isBot"] or player_key in runtime_player_keys:
+        if not player_settings["isBot"]:
+            continue
+
+        runtime_player = runtime_players_by_key.get(player_key)
+        if runtime_player and runtime_player["color"] is not None:
             continue
 
         color_option = available_colors.pop(0)
         player_settings["color"] = color_option["color"]
+        if runtime_player:
+            runtime_player.update(deepcopy(color_option))
+            continue
+
         player_number = game["nextPlayerNumber"]
         game["nextPlayerNumber"] += 1
         game["players"].append(
@@ -1047,10 +1055,8 @@ def reseat_lobby_players(game):
 
 
 def make_lobby_bot(game, seat_key):
-    color = next(color for color in LOBBY_COLOR_ORDER if not any(player["color"] == color for player in game["players"]))
-    option = next(option for option in PLAYER_COLORS if option["color"] == color)
     bot = make_runtime_player(
-        option,
+        {"color": None},
         game["nextPlayerNumber"],
         settings_player_key=seat_key,
         is_bot=True,
